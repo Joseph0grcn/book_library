@@ -295,7 +295,7 @@ function showBookDetail(book) {
   const detail = document.getElementById('book-detail');
   const content = document.getElementById('book-detail-content');
   const metadata = book.metadata || {};
-  const coverId = Array.isArray(metadata.covers) ? metadata.covers[0] : '';
+  const coverUrl = getBookCoverUrl(book);
   const description = typeof metadata.description === 'object' ? metadata.description.value : metadata.description;
   const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : '';
   const subjects = Array.isArray(metadata.subjects) ? metadata.subjects.join(', ') : '';
@@ -308,12 +308,16 @@ function showBookDetail(book) {
   const layout = document.createElement('div');
   layout.className = 'book-detail-content';
 
-  if (coverId) {
+  if (coverUrl) {
     const cover = document.createElement('img');
     cover.className = 'book-cover';
-    cover.src = `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg`;
+    cover.src = coverUrl;
     cover.alt = `${book.title} kapak görseli`;
     cover.loading = 'lazy';
+    cover.referrerPolicy = 'no-referrer';
+    cover.addEventListener('error', () => {
+      cover.remove();
+    }, { once: true });
     layout.appendChild(cover);
   }
 
@@ -382,6 +386,26 @@ function showBookDetail(book) {
   });
   content.appendChild(metadataGrid);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function getBookCoverUrl(book) {
+  const metadata = book.metadata || {};
+  const googleCoverUrls = metadata.imageLinks && [
+    metadata.imageLinks.extraLarge,
+    metadata.imageLinks.large,
+    metadata.imageLinks.medium,
+    metadata.imageLinks.thumbnail,
+    metadata.imageLinks.smallThumbnail
+  ].filter(Boolean).map((url) => url.replace(/^http:/, 'https:'));
+
+  if (metadata.source_api === 'Google Books' && googleCoverUrls.length) {
+    return googleCoverUrls[0];
+  }
+
+  const coverId = Array.isArray(metadata.covers) ? metadata.covers[0] : '';
+  if (coverId) return `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg`;
+  if (googleCoverUrls && googleCoverUrls.length) return googleCoverUrls[0];
+  return '';
 }
 
 function metadataLabel(key) {

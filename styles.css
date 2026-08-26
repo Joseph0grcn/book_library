@@ -513,6 +513,8 @@ button.danger:hover {
   max-height: 320px;
   object-fit: contain;
   background: var(--bg);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(29, 70, 62, 0.14);
 }
 
 .book-detail h2 {
