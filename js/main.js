@@ -315,6 +315,9 @@ function setup() {
                 showToast(error.message, 'error');
                 showLookupError(cleaned, error.message);
               });
+              if (quickScanMode) {
+                requestAnimationFrame(scanFrame);
+              }
               return;
             }
           } catch {}
