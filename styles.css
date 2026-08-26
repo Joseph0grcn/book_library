@@ -73,6 +73,39 @@ header {
   margin-bottom: 32px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.connection-status::before {
+  width: 7px;
+  height: 7px;
+  content: "";
+  background: #3eaa78;
+  border-radius: 50%;
+}
+
+.connection-status.offline {
+  color: #b56d29;
+}
+
+.connection-status.offline::before {
+  background: #d88b35;
+}
+
 h1 {
   margin: 0;
   font-family: Georgia, serif;

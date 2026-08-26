@@ -5,6 +5,31 @@ const supabaseClient = window.supabase && window.SUPABASE_URL && window.SUPABASE
   : null;
 let activeUser = null;
 let appInitialized = false;
+let deferredInstallPrompt = null;
+
+function setupPwaUi() {
+  const installButton = document.getElementById('pwa-install');
+  const connectionStatus = document.getElementById('connection-status');
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    installButton.classList.remove('hidden');
+  });
+  installButton.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installButton.classList.add('hidden');
+  });
+  const updateConnectionStatus = () => {
+    connectionStatus.textContent = navigator.onLine ? 'Çevrimiçi' : 'Çevrimdışı';
+    connectionStatus.classList.toggle('offline', !navigator.onLine);
+  };
+  window.addEventListener('online', updateConnectionStatus);
+  window.addEventListener('offline', updateConnectionStatus);
+  updateConnectionStatus();
+}
 
 function userStorageKey() {
   return activeUser ? `${STORAGE_KEY}_${activeUser.id}` : STORAGE_KEY;
@@ -598,7 +623,7 @@ function setup() {
   }
 
   setScannerVisible(false);
-  setMode('isbn');
+  setMode(new URLSearchParams(window.location.search).get('mode') === 'manual' ? 'manual' : 'isbn');
 
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
@@ -1036,4 +1061,7 @@ async function initializeApp() {
   document.getElementById('auth-logout').addEventListener('click', () => supabaseClient.auth.signOut());
 }
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', () => {
+  setupPwaUi();
+  initializeApp();
+});

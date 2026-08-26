@@ -8,6 +8,15 @@
   "background_color": "#edf4f1",
   "theme_color": "#176b5b",
   "lang": "tr",
+  "categories": ["books", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "ISBN ile kitap ekle",
+      "short_name": "Kitap ekle",
+      "url": "/?mode=isbn",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.svg",

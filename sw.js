@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kitap-kutuphanem-v1';
+const CACHE_NAME = 'kitap-kutuphanem-v2';
 const APP_SHELL = [
   '/',
   '/index.html',

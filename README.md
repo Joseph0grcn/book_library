@@ -53,7 +53,7 @@ Google Books isteğe bağlı API anahtarıyla da kullanılabilir. Kota sınırı
 `supabase-config.js` yalnızca frontend için tasarlanmış public anon key içerir. Service role key'i bu dosyaya koymayın.
 
 ## PWA kurulumu
-Site HTTPS üzerinden yayınlandığında tarayıcıdaki yükleme/kurulum seçeneği kullanılabilir. Telefonda tarayıcı menüsünden "Ana ekrana ekle" seçeneğini kullanın. Service worker uygulama kabuğunu önbelleğe alır; kitap verileri ve Supabase istekleri güncel kalması için ağ üzerinden çalışır.
+Site HTTPS üzerinden yayınlandığında tarayıcıdaki yükleme/kurulum seçeneği kullanılabilir. Uygulamadaki "Uygulamayı yükle" düğmesi desteklenen tarayıcılarda kurulum penceresini açar; iPhone'da tarayıcı menüsünden "Ana ekrana ekle" seçeneğini kullanın. Service worker uygulama kabuğunu önbelleğe alır; kitap verileri ve Supabase istekleri güncel kalması için ağ üzerinden çalışır.
 
 ## Dosyalar
 - `index.html`

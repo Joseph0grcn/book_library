@@ -36,7 +36,11 @@
         <h1>Kitap Kütüphanem</h1>
         <p class="intro">Koleksiyonunu tek yerde keşfet, takip et ve büyüt.</p>
       </div>
-      <button type="button" id="auth-logout" class="secondary small">Çıkış yap</button>
+      <div class="header-actions">
+        <span id="connection-status" class="connection-status">Çevrimiçi</span>
+        <button type="button" id="pwa-install" class="secondary small hidden">Uygulamayı yükle</button>
+        <button type="button" id="auth-logout" class="secondary small">Çıkış yap</button>
+      </div>
       <div class="library-stats" aria-label="Kütüphane özeti">
         <span class="stats-label">KOLEKSİYON</span>
         <strong id="book-count">0</strong>
