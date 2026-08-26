@@ -112,6 +112,8 @@ async function fetchAllBooksFromServer() {
     if (!error && Array.isArray(data)) {
       return data.map((book) => normalizeBook({ ...book, createdAt: book.created_at }));
     }
+    setStatus('Kütüphane sunucudan alınamadı. Yerel kayıtlar gösteriliyor.', true);
+    return loadBooks();
   }
   try {
     const response = await fetch('/.netlify/functions/books');
@@ -177,7 +179,9 @@ function render() {
   if (bookCount) bookCount.textContent = books.length;
   const statReading = document.getElementById('stat-reading');
   const statRead = document.getElementById('stat-read');
+  const statTotal = document.getElementById('stat-total');
   const statProgress = document.getElementById('stat-progress');
+  if (statTotal) statTotal.textContent = books.length;
   if (statReading) statReading.textContent = books.filter((book) => book.status === 'reading').length;
   if (statRead) statRead.textContent = books.filter((book) => book.status === 'read').length;
   if (statProgress) statProgress.textContent = books.length ? `${Math.round(books.reduce((sum, book) => sum + book.progress, 0) / books.length)}%` : '0%';
@@ -446,6 +450,7 @@ function getBookCoverUrl(book) {
 
   const coverId = Array.isArray(metadata.covers) ? metadata.covers[0] : '';
   if (coverId) return `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg`;
+  if (metadata.cover_i) return `https://covers.openlibrary.org/b/id/${encodeURIComponent(metadata.cover_i)}-L.jpg`;
   if (googleCoverUrls && googleCoverUrls.length) return googleCoverUrls[0];
   return '';
 }
@@ -547,10 +552,10 @@ async function fetchBookMetadata(isbnInput) {
   const isbn = cleaned.replace(/[^0-9Xx]/g, '');
   if (!isbn) throw new Error('Geçerli bir ISBN / barkod bulunamadı.');
 
-  const googleBook = await fetchGoogleBooksMetadata(isbn);
+  const googleBook = await fetchGoogleBooksMetadata(isbn).catch(() => null);
   if (googleBook) return googleBook;
 
-  const openLibraryBook = await fetchOpenLibraryMetadata(isbn);
+  const openLibraryBook = await fetchOpenLibraryMetadata(isbn).catch(() => null);
   if (!openLibraryBook) throw new Error('Bu ISBN için kitap bilgisi bulunamadı.');
 
   return openLibraryBook;
@@ -1016,6 +1021,7 @@ async function initializeApp() {
   const actionsMenuToggle = document.getElementById('actions-menu-toggle');
   const stats = document.getElementById('dashboard-stats');
   const list = document.getElementById('list');
+  const detail = document.getElementById('book-detail');
 
   const setPage = (page) => {
     controls.classList.toggle('page-hidden', page === 'stats');
@@ -1024,6 +1030,7 @@ async function initializeApp() {
     filters.classList.toggle('page-hidden', page !== 'library');
     stats.classList.toggle('page-hidden', page !== 'stats');
     list.classList.toggle('page-hidden', page !== 'library');
+    detail.classList.add('page-hidden');
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
     });
