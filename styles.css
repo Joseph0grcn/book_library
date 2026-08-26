@@ -57,6 +57,11 @@ h1 {
   flex: 1;
 }
 
+.mode.active {
+  background: var(--primary);
+  color: white;
+}
+
 .entry-panel {
   display: flex;
   flex-wrap: wrap;
