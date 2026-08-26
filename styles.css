@@ -233,6 +233,13 @@ button.danger:hover {
   gap: 12px;
   padding: 14px 16px;
   margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
 }
 
 .meta {
@@ -267,6 +274,58 @@ button.danger:hover {
   font-size: 0.88rem;
 }
 
+.book-detail {
+  margin-top: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.book-detail-content {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 22px;
+  margin-top: 18px;
+}
+
+.book-cover {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--bg);
+}
+
+.book-detail h2 {
+  margin: 0 0 10px;
+}
+
+.book-detail dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.book-detail dt {
+  font-weight: 700;
+}
+
+.book-description {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.metadata-json {
+  width: 100%;
+  overflow: auto;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
 @media (max-width: 640px) {
   body {
     padding: 16px;
@@ -275,6 +334,10 @@ button.danger:hover {
   .card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .book-detail-content {
+    grid-template-columns: 1fr;
   }
 
   #book-form,

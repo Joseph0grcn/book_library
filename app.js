@@ -107,6 +107,15 @@ function render() {
   visible.forEach((book) => {
     const card = document.createElement('div');
     card.className = 'card';
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.addEventListener('click', () => showBookDetail(book));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showBookDetail(book);
+      }
+    });
 
     const meta = document.createElement('div');
     meta.className = 'meta';
@@ -139,6 +148,7 @@ function render() {
 
     const actions = document.createElement('div');
     actions.className = 'actions';
+    actions.addEventListener('click', (event) => event.stopPropagation());
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'small';
@@ -201,6 +211,84 @@ function render() {
     card.appendChild(actions);
     list.appendChild(card);
   });
+}
+
+function showBookDetail(book) {
+  const controls = document.querySelector('.controls');
+  const list = document.getElementById('list');
+  const detail = document.getElementById('book-detail');
+  const content = document.getElementById('book-detail-content');
+  const metadata = book.metadata || {};
+  const coverId = Array.isArray(metadata.covers) ? metadata.covers[0] : '';
+  const description = typeof metadata.description === 'object' ? metadata.description.value : metadata.description;
+  const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : '';
+  const subjects = Array.isArray(metadata.subjects) ? metadata.subjects.join(', ') : '';
+
+  controls.classList.add('hidden');
+  list.classList.add('hidden');
+  detail.classList.remove('hidden');
+  content.innerHTML = '';
+
+  const layout = document.createElement('div');
+  layout.className = 'book-detail-content';
+
+  if (coverId) {
+    const cover = document.createElement('img');
+    cover.className = 'book-cover';
+    cover.src = `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg`;
+    cover.alt = `${book.title} kapak görseli`;
+    cover.loading = 'lazy';
+    layout.appendChild(cover);
+  }
+
+  const summary = document.createElement('div');
+  const heading = document.createElement('h2');
+  heading.textContent = book.title;
+  summary.appendChild(heading);
+
+  const fields = [
+    ['Yazar', book.author || 'Yazar bilinmiyor'],
+    ['ISBN', book.isbn],
+    ['Yayın tarihi', metadata.publish_date],
+    ['Yayınevi', publisher],
+    ['Sayfa sayısı', metadata.number_of_pages],
+    ['Format', metadata.physical_format],
+    ['Konular', subjects]
+  ].filter((field) => field[1]);
+  const details = document.createElement('dl');
+  fields.forEach(([label, value]) => {
+    const term = document.createElement('dt');
+    term.textContent = label;
+    const descriptionEl = document.createElement('dd');
+    descriptionEl.textContent = value;
+    details.append(term, descriptionEl);
+  });
+  summary.appendChild(details);
+
+  if (description) {
+    const descriptionHeading = document.createElement('h3');
+    descriptionHeading.textContent = 'Açıklama';
+    const descriptionEl = document.createElement('p');
+    descriptionEl.className = 'book-description';
+    descriptionEl.textContent = description;
+    summary.append(descriptionHeading, descriptionEl);
+  }
+  layout.appendChild(summary);
+  content.appendChild(layout);
+
+  const metadataHeading = document.createElement('h3');
+  metadataHeading.textContent = 'Tüm ISBN metadatası';
+  const metadataPre = document.createElement('pre');
+  metadataPre.className = 'metadata-json';
+  metadataPre.textContent = JSON.stringify(metadata, null, 2);
+  content.append(metadataHeading, metadataPre);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function hideBookDetail() {
+  document.querySelector('.controls').classList.remove('hidden');
+  document.getElementById('list').classList.remove('hidden');
+  document.getElementById('book-detail').classList.add('hidden');
 }
 
 async function fetchBookMetadata(isbnInput) {
@@ -321,6 +409,7 @@ function setup() {
 
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
+  document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
 
   document.getElementById('lookup-book').addEventListener('click', async () => {
     try {
