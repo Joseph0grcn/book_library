@@ -337,7 +337,7 @@ export function showBookDetail(book) {
 
   controls.classList.add('hidden');
   list.classList.add('hidden');
-  detail.classList.remove('hidden');
+  detail.classList.remove('hidden', 'page-hidden');
   content.innerHTML = '';
 
   const layout = document.createElement('div');
@@ -413,7 +413,7 @@ export function showBookDetail(book) {
 export function hideBookDetail() {
   document.querySelector('.controls').classList.remove('hidden');
   document.getElementById('list').classList.remove('hidden');
-  document.getElementById('book-detail').classList.add('hidden');
+  document.getElementById('book-detail').classList.add('hidden', 'page-hidden');
 }
 
 export function getBookCoverUrl(book) {
