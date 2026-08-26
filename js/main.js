@@ -769,8 +769,10 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
-  setupPwaUi();
-  initializeApp();
-});
+// ES6 modules are automatically deferred, so the DOM is already ready
+// when this code executes. No need for DOMContentLoaded which may have
+// already fired, causing a silent failure where no listeners attach.
+initTheme();
+setupPwaUi();
+initializeApp();
+
