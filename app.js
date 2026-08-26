@@ -14,6 +14,7 @@ function normalizeBook(rawBook) {
     tags: Array.isArray(rawBook.tags) ? rawBook.tags : [],
     read: !!rawBook.read,
     isbn: rawBook.isbn || '',
+    metadata: rawBook.metadata && typeof rawBook.metadata === 'object' ? rawBook.metadata : {},
     createdAt: rawBook.createdAt || Date.now()
   };
 }
@@ -33,7 +34,7 @@ function saveBooks(books) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
 }
 
-function createBook({ title, author, year, tags, read, isbn }) {
+function createBook({ title, author, year, tags, read, isbn, metadata }) {
   return normalizeBook({
     id: uid(),
     title: title || 'Başlıksız',
@@ -42,6 +43,7 @@ function createBook({ title, author, year, tags, read, isbn }) {
     tags: Array.isArray(tags) ? tags : [],
     read: !!read,
     isbn: isbn || '',
+    metadata: metadata || {},
     createdAt: Date.now()
   });
 }
@@ -220,7 +222,8 @@ async function fetchBookMetadata(isbnInput) {
     author: authors,
     year,
     isbn,
-    tags: ['isbn', 'otomatik']
+    tags: ['isbn', 'otomatik'],
+    metadata: data
   };
 }
 
@@ -247,6 +250,8 @@ function setup() {
   const closeScanner = document.getElementById('close-scanner');
   const scannerVideo = document.getElementById('scanner-video');
   const readPrintedIsbn = document.getElementById('read-printed-isbn');
+  const scanBarcode = document.getElementById('scan-barcode');
+  const scanPrintedIsbn = document.getElementById('scan-printed-isbn');
   let scannerLoopToken = 0;
 
   function setScannerVisible(isVisible) {
@@ -303,6 +308,23 @@ function setup() {
     }
   });
 
+  function applyBookToForm(book) {
+    isbnInput.value = book.isbn;
+    document.getElementById('title').value = book.title;
+    document.getElementById('author').value = book.author;
+    document.getElementById('year').value = book.year;
+    document.getElementById('tags').value = book.tags.join(', ');
+  }
+
+  async function handleScannedIsbn(cleaned, source) {
+    isbnInput.value = cleaned;
+    setStatus(`${source} algılandı. Bilgi getiriliyor...`);
+    stopScanner();
+    const book = await fetchBookMetadata(cleaned);
+    applyBookToForm(book);
+    setStatus(`${source} bilgisi hazır. Kaydet butonuna basabilirsiniz.`);
+  }
+
   async function openScanner() {
     setMode('isbn');
     setScannerVisible(true);
@@ -324,9 +346,9 @@ function setup() {
 
       scannerVideo.srcObject = stream;
       await scannerVideo.play();
-      setStatus('Kamera açıldı. Barkodu tarayın.');
+      setStatus(scanPrintedIsbn.checked ? 'Kamera açıldı. Yazılı ISBN için düğmeye basın.' : 'Kamera açıldı. Barkodu tarayın.');
 
-      if ('BarcodeDetector' in window) {
+      if (!scanPrintedIsbn.checked && 'BarcodeDetector' in window) {
         const detector = new BarcodeDetector({
           formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128']
         });
@@ -344,17 +366,7 @@ function setup() {
               if (!code) continue;
               const cleaned = String(code).replace(/[^0-9Xx]/g, '');
               if (!cleaned) continue;
-              isbnInput.value = cleaned;
-              setStatus('Barkod algılandı. Bilgi getiriliyor...');
-              stopScanner();
-              fetchBookMetadata(cleaned)
-                .then((book) => {
-                  document.getElementById('title').value = book.title;
-                  document.getElementById('author').value = book.author;
-                  document.getElementById('year').value = book.year;
-                  document.getElementById('tags').value = book.tags.join(', ');
-                  setStatus('Barkod bilgisi hazır. Kaydet butonuna basabilirsiniz.');
-                })
+              handleScannedIsbn(cleaned, 'Barkod')
                 .catch((error) => {
                   setStatus(error.message, true);
                 });
@@ -370,6 +382,8 @@ function setup() {
         scanFrame();
         return;
       }
+
+      if (scanPrintedIsbn.checked) return;
 
       if (!window.Quagga) {
         setStatus('Barkod tarayıcı yüklenmedi. ISBN alanını manuel yazabilirsiniz.', true);
@@ -402,18 +416,7 @@ function setup() {
           const cleaned = String(code).replace(/[^0-9Xx]/g, '');
           if (!cleaned) return;
 
-          isbnInput.value = cleaned;
-          setStatus('Barkod algılandı. Bilgi getiriliyor...');
-          stopScanner();
-
-          fetchBookMetadata(cleaned)
-            .then((book) => {
-              document.getElementById('title').value = book.title;
-              document.getElementById('author').value = book.author;
-              document.getElementById('year').value = book.year;
-              document.getElementById('tags').value = book.tags.join(', ');
-              setStatus('Barkod bilgisi hazır. Kaydet butonuna basabilirsiniz.');
-            })
+          handleScannedIsbn(cleaned, 'Barkod')
             .catch((error) => {
               setStatus(error.message, true);
             });
@@ -459,20 +462,21 @@ function setup() {
         return;
       }
 
-      isbnInput.value = isbn;
-      stopScanner();
-      setStatus('ISBN algılandı. Bilgi getiriliyor...');
-      const book = await fetchBookMetadata(isbn);
-      document.getElementById('title').value = book.title;
-      document.getElementById('author').value = book.author;
-      document.getElementById('year').value = book.year;
-      document.getElementById('tags').value = book.tags.join(', ');
-      setStatus('Yazılı ISBN bilgisi hazır. Kaydet butonuna basabilirsiniz.');
+      await handleScannedIsbn(isbn, 'Yazılı ISBN');
     } catch (error) {
       setStatus('Yazılı ISBN okunamadı. Numarayı elle yazabilirsiniz.', true);
     } finally {
       readPrintedIsbn.disabled = false;
     }
+  });
+
+  scanBarcode.addEventListener('change', () => {
+    if (scanBarcode.checked) scanPrintedIsbn.checked = false;
+    if (!scanBarcode.checked && !scanPrintedIsbn.checked) scanBarcode.checked = true;
+  });
+  scanPrintedIsbn.addEventListener('change', () => {
+    if (scanPrintedIsbn.checked) scanBarcode.checked = false;
+    if (!scanBarcode.checked && !scanPrintedIsbn.checked) scanPrintedIsbn.checked = true;
   });
 
   document.getElementById('scan-camera').addEventListener('click', openScanner);
@@ -494,6 +498,7 @@ function setup() {
     let year = document.getElementById('year').value.trim();
     let tags = document.getElementById('tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
     let isbn = '';
+    let metadata = {};
 
     if (mode === 'isbn') {
       try {
@@ -504,6 +509,7 @@ function setup() {
         year = result.year;
         isbn = result.isbn;
         tags = result.tags;
+        metadata = result.metadata;
         document.getElementById('title').value = title;
         document.getElementById('author').value = author;
         document.getElementById('year').value = year;
@@ -526,7 +532,8 @@ function setup() {
       year,
       tags,
       read: document.getElementById('read').checked,
-      isbn
+      isbn,
+      metadata
     }));
     saveBooks(books);
     await syncBooksToServer(books);
