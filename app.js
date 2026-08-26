@@ -1006,6 +1006,17 @@ async function initializeApp() {
   const authStatus = document.getElementById('auth-status');
   const authForm = document.getElementById('auth-form');
   const registerButton = document.getElementById('auth-register');
+  const controls = document.getElementById('library-controls');
+  const filters = document.querySelector('.filters');
+  const stats = document.getElementById('dashboard-stats');
+  const list = document.getElementById('list');
+
+  const setMobileView = (view) => {
+    controls.classList.toggle('mobile-view-hidden', view !== 'add');
+    filters.classList.toggle('mobile-view-hidden', view !== 'library');
+    stats.classList.toggle('mobile-view-hidden', view !== 'stats');
+    list.classList.toggle('mobile-view-hidden', view !== 'add' && view !== 'stats');
+  };
 
   document.querySelectorAll('[data-tab-target]').forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -1014,7 +1025,9 @@ async function initializeApp() {
         supabaseClient?.auth.signOut();
         return;
       }
-      if (targetId === 'library-controls') document.getElementById('mode-isbn')?.click();
+      const view = targetId === 'library-controls' ? 'add' : targetId === 'dashboard-stats' ? 'stats' : 'library';
+      if (view === 'add') document.getElementById('mode-isbn')?.click();
+      setMobileView(view);
       document.querySelectorAll('.mobile-tabbar .tab').forEach((item) => item.classList.toggle('active', item === tab));
       document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });

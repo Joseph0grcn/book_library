@@ -416,6 +416,10 @@ button.danger:hover {
   display: none;
 }
 
+.mobile-view-hidden {
+  display: initial;
+}
+
 .scanner-modal {
   position: fixed;
   inset: 0;
@@ -721,6 +725,10 @@ button.danger:hover {
     border-radius: 18px;
     box-shadow: 0 12px 35px rgba(29, 70, 62, 0.18);
     backdrop-filter: blur(16px);
+  }
+
+  .mobile-view-hidden {
+    display: none !important;
   }
 
   .mobile-tabbar .tab {
