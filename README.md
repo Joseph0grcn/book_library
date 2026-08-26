@@ -14,6 +14,7 @@ Bu proje, sahip olduğunuz kitapları takip etmek için hazırlanmış, Netlify 
 - `db.json` üzerinden kalıcı kayıt
 - JSON dışa aktarma / içe aktarma
 - Netlify üzerinde yayınlanabilir statik yapı
+- Telefona ve masaüstüne kurulabilen PWA desteği
 - Supabase ile kullanıcı hesabı ve kişiye özel kitaplık
 
 ## Yerel çalıştırma
@@ -50,6 +51,9 @@ http://localhost:8000
 Google Books isteğe bağlı API anahtarıyla da kullanılabilir. Kota sınırını artırmak için Google Cloud Console'dan Books API anahtarı alıp `supabase-config.js` içindeki `GOOGLE_BOOKS_API_KEY` alanına yazabilirsiniz. Boş bırakılırsa anahtarsız istek yapılır ve başarısız durumda Open Library Search kullanılır.
 
 `supabase-config.js` yalnızca frontend için tasarlanmış public anon key içerir. Service role key'i bu dosyaya koymayın.
+
+## PWA kurulumu
+Site HTTPS üzerinden yayınlandığında tarayıcıdaki yükleme/kurulum seçeneği kullanılabilir. Telefonda tarayıcı menüsünden "Ana ekrana ekle" seçeneğini kullanın. Service worker uygulama kabuğunu önbelleğe alır; kitap verileri ve Supabase istekleri güncel kalması için ağ üzerinden çalışır.
 
 ## Dosyalar
 - `index.html`
