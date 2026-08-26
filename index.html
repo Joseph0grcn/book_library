@@ -42,29 +42,33 @@
           <button type="button" id="scan-camera" class="secondary">Kamera ile Tara</button>
         </div>
 
-        <label class="checkbox">
-          <input id="read" type="checkbox" />
-          <span>Okudum</span>
-        </label>
-        <select id="reading-status" aria-label="Okuma durumu">
-          <option value="unread">Okunacak</option>
-          <option value="reading">Okunuyor</option>
-          <option value="read">Okundu</option>
-        </select>
-        <label class="progress-control">
-          <span>İlerleme <output id="progress-value">0%</output></span>
-          <input id="progress" type="range" min="0" max="100" step="5" value="0" />
-        </label>
-        <select id="rating" aria-label="Kitap puanı">
-          <option value="0">Puan yok</option>
-          <option value="1">1 / 5</option>
-          <option value="2">2 / 5</option>
-          <option value="3">3 / 5</option>
-          <option value="4">4 / 5</option>
-          <option value="5">5 / 5</option>
-        </select>
-        <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
-        <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı)"></textarea>
+        <div class="reading-tools">
+          <label class="checkbox">
+            <input id="read" type="checkbox" />
+            <span>Okudum</span>
+          </label>
+          <select id="reading-status" aria-label="Okuma durumu">
+            <option value="unread">Okunacak</option>
+            <option value="reading">Okunuyor</option>
+            <option value="read">Okundu</option>
+          </select>
+          <label class="progress-control">
+            <span>İlerleme <output id="progress-value">0%</output></span>
+            <input id="progress" type="range" min="0" max="100" step="5" value="0" />
+          </label>
+          <select id="rating" aria-label="Kitap puanı">
+            <option value="0">Puan yok</option>
+            <option value="1">1 / 5</option>
+            <option value="2">2 / 5</option>
+            <option value="3">3 / 5</option>
+            <option value="4">4 / 5</option>
+            <option value="5">5 / 5</option>
+          </select>
+        </div>
+        <div class="personal-fields">
+          <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
+          <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı)"></textarea>
+        </div>
         <button type="submit" id="save-book">Kitabı Kaydet</button>
       </form>
 
