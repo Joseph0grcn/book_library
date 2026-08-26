@@ -619,22 +619,30 @@ async function initializeApp() {
     authGate.style.display = 'none';
     app.style.display = 'block';
 
-    if (session) {
-      await flushPendingSync();
-      const books = await fetchAllBooksFromServer();
-      saveBooks(books);
-      setupRealtimeSubscription(() => {
-        render();
-      });
-    }
-
+    // 1. Initialize DOM events & render local cache instantly (0ms lag)
     if (!appInitialized) {
       setup();
       appInitialized = true;
     } else {
       render();
     }
+
+    // 2. Perform server sync & setup Realtime in background
+    if (session && supabaseClient) {
+      try {
+        await flushPendingSync();
+        const books = await fetchAllBooksFromServer();
+        saveBooks(books);
+        render();
+        setupRealtimeSubscription(() => {
+          render();
+        });
+      } catch (err) {
+        console.warn('Background sync error:', err);
+      }
+    }
   };
+
 
   // 1. Attach Form Event Listeners IMMEDIATELY so clicks are never blocked
   authForm.addEventListener('submit', async (event) => {
