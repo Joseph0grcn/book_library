@@ -246,6 +246,7 @@ function setup() {
   const scannerModal = document.getElementById('scanner-modal');
   const closeScanner = document.getElementById('close-scanner');
   const scannerVideo = document.getElementById('scanner-video');
+  let scannerLoopToken = 0;
 
   function setMode(mode) {
     const isManual = mode === 'manual';
@@ -258,6 +259,7 @@ function setup() {
   }
 
   function stopScanner() {
+    scannerLoopToken += 1;
     if (window.Quagga) {
       try { window.Quagga.stop(); } catch (error) {}
     }
@@ -286,21 +288,72 @@ function setup() {
   });
 
   async function openScanner() {
-    if (!window.Quagga) {
-      setStatus('Barkod tarayıcı yüklenmedi. Lütfen sayfayı yenileyin.', true);
-      return;
-    }
-
     setMode('isbn');
     scannerModal.classList.remove('hidden');
     setStatus('Kamera açılıyor...');
 
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Bu tarayıcı kamera erişimini desteklemiyor.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }
       });
 
       scannerVideo.srcObject = stream;
+      await scannerVideo.play();
+      setStatus('Kamera açıldı. Barkodu tarayın.');
+
+      if ('BarcodeDetector' in window) {
+        const detector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128']
+        });
+
+        const token = ++scannerLoopToken;
+        const scanFrame = async () => {
+          if (token !== scannerLoopToken || scannerModal.classList.contains('hidden')) {
+            return;
+          }
+
+          try {
+            const barcodes = await detector.detect(scannerVideo);
+            for (const barcode of barcodes) {
+              const code = barcode.rawValue;
+              if (!code) continue;
+              const cleaned = String(code).replace(/[^0-9Xx]/g, '');
+              if (!cleaned) continue;
+              isbnInput.value = cleaned;
+              setStatus('Barkod algılandı. Bilgi getiriliyor...');
+              stopScanner();
+              fetchBookMetadata(cleaned)
+                .then((book) => {
+                  document.getElementById('title').value = book.title;
+                  document.getElementById('author').value = book.author;
+                  document.getElementById('year').value = book.year;
+                  document.getElementById('tags').value = book.tags.join(', ');
+                  setStatus('Barkod bilgisi hazır. Kaydet butonuna basabilirsiniz.');
+                })
+                .catch((error) => {
+                  setStatus(error.message, true);
+                });
+              return;
+            }
+          } catch (error) {
+            // Kamera görünümünü kapatmadan bir sonraki kareye devam et.
+          }
+
+          requestAnimationFrame(scanFrame);
+        };
+
+        scanFrame();
+        return;
+      }
+
+      if (!window.Quagga) {
+        setStatus('Barkod tarayıcı yüklenmedi. ISBN alanını manuel yazabilirsiniz.', true);
+        return;
+      }
 
       window.Quagga.init({
         inputStream: {
@@ -345,7 +398,6 @@ function setup() {
         });
 
         window.Quagga.start();
-        setStatus('Kamera açıldı. Barkodu tarayın.');
       });
     } catch (error) {
       setStatus('Kamera erişimi yok. ISBN manuel olarak yazabilirsiniz.', true);
