@@ -106,6 +106,7 @@ function setup() {
   const progressValue = document.getElementById('progress-value');
   const shelf = document.getElementById('shelf');
   let scannerLoopToken = 0;
+  let pendingFetchedBook = null;
 
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
@@ -141,8 +142,14 @@ function setup() {
   setScannerVisible(false);
   setMode(new URLSearchParams(window.location.search).get('mode') === 'manual' ? 'manual' : 'isbn');
 
-  modeManual.addEventListener('click', () => setMode('manual'));
-  modeIsbn.addEventListener('click', () => setMode('isbn'));
+  modeManual.addEventListener('click', () => {
+    pendingFetchedBook = null;
+    setMode('manual');
+  });
+  modeIsbn.addEventListener('click', () => {
+    pendingFetchedBook = null;
+    setMode('isbn');
+  });
   document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
   document.getElementById('close-edit-modal').addEventListener('click', closeEditModal);
   document.getElementById('edit-form').addEventListener('submit', saveEditedBook);
@@ -169,7 +176,7 @@ function setup() {
     if (event.target === lookupErrorModal) lookupErrorModal.classList.add('hidden');
   });
 
-  async function saveFetchedBook(book) {
+  function prepareFetchedBook(book, source = 'ISBN') {
     const books = loadBooks();
     const duplicate = findDuplicateBook(book, books);
     if (duplicate) {
@@ -177,24 +184,11 @@ function setup() {
       return false;
     }
 
-    const ratingVal = getStarRatingValue('form-rating-widget');
-
-    books.unshift(createBook({
-      ...book,
-      read: readingStatus.value === 'read',
-      status: readingStatus.value,
-      progress: Number(progress.value),
-      rating: ratingVal,
-      review: document.getElementById('review').value.trim(),
-      notes: document.getElementById('notes').value.trim(),
-      shelf: shelf.value,
-      startDate: document.getElementById('start-date').value,
-      finishDate: document.getElementById('finish-date').value
-    }));
-    saveBooks(books);
-    await syncBooksToServer(books);
-    render();
-    showToast('Kitap ISBN ile kütüphaneye eklendi.', 'success');
+    pendingFetchedBook = book;
+    applyBookToForm(book);
+    setMode('manual');
+    showToast(`${source} bilgileri getirildi. Kontrol edip kaydedin.`, 'success');
+    document.getElementById('title').focus();
     return true;
   }
 
@@ -202,8 +196,7 @@ function setup() {
     try {
       showToast('ISBN bilgisi alınıyor...', 'info');
       const result = await fetchBookMetadata(isbnInput.value);
-      applyBookToForm(result);
-      await saveFetchedBook(result);
+      prepareFetchedBook(result);
     } catch (error) {
       showToast(error.message, 'error');
       showLookupError(isbnInput.value.replace(/[^0-9Xx]/g, ''), error.message);
@@ -223,7 +216,7 @@ function setup() {
     showToast(`${source} algılandı. Bilgi getiriliyor...`, 'info');
     stopScanner();
     const book = await fetchBookMetadata(cleaned);
-    await saveFetchedBook(book);
+    prepareFetchedBook(book, source);
   }
 
   async function openScanner() {
@@ -376,16 +369,17 @@ function setup() {
       try {
         showToast('ISBN üzerinden bilgi alınıyor...', 'info');
         const result = await fetchBookMetadata(isbnInput.value);
-        title = result.title;
-        author = result.author;
-        year = result.year;
-        isbn = result.isbn;
-        tags = result.tags;
-        metadata = result.metadata;
+        prepareFetchedBook(result);
+        return;
       } catch (error) {
         showToast(error.message, 'error');
         return;
       }
+    }
+
+    if (pendingFetchedBook) {
+      isbn = pendingFetchedBook.isbn;
+      metadata = pendingFetchedBook.metadata;
     }
 
     if (!title) {
@@ -423,7 +417,10 @@ function setup() {
     saveBooks(books);
     await syncBooksToServer(books);
     form.reset();
+    pendingFetchedBook = null;
     setupStarRating('form-rating-widget', 0);
+    progressValue.value = '0%';
+    setMode('isbn');
     showToast('Kitap başarıyla kaydedildi.', 'success');
     render();
   });

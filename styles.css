@@ -248,6 +248,36 @@ h1 {
   flex: 1 1 100%;
 }
 
+.isbn-step-copy {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+  color: var(--text);
+}
+
+.isbn-step-copy span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.scan-action {
+  flex: 1 1 220px;
+  min-height: 44px;
+}
+
+.isbn-manual-lookup {
+  display: flex;
+  flex: 2 1 360px;
+  gap: 8px;
+}
+
+.isbn-manual-lookup input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .hidden {
   display: none;
 }
@@ -980,6 +1010,10 @@ button.danger:hover {
   #book-form textarea,
   button {
     width: 100%;
+  }
+
+  .isbn-manual-lookup {
+    flex-direction: column;
   }
 
   .dashboard-stats {

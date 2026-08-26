@@ -73,9 +73,15 @@
         </div>
 
         <div id="isbn-fields" class="entry-panel hidden">
-          <input id="isbn-input" type="text" placeholder="ISBN veya barkod girin" />
-          <button type="button" id="lookup-book" class="secondary">Bilgiyi Getir</button>
-          <button type="button" id="scan-camera" class="secondary">Kamera ile Tara</button>
+          <div class="isbn-step-copy">
+            <strong>Önce kitabın barkodunu okutun</strong>
+            <span>Kitap bilgileri geldikten sonra kaydetmeden önce düzenleyebilirsiniz.</span>
+          </div>
+          <button type="button" id="scan-camera" class="scan-action">Kamera ile Tara</button>
+          <div class="isbn-manual-lookup">
+            <input id="isbn-input" type="text" placeholder="veya ISBN / barkodu elle girin" aria-label="ISBN veya barkod" />
+            <button type="button" id="lookup-book" class="secondary">Bilgileri Getir</button>
+          </div>
         </div>
 
         <div class="reading-tools">
