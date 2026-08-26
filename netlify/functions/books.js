@@ -23,7 +23,7 @@ exports.handler = async function(event, context) {
   if (method === 'GET') {
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
       body: JSON.stringify(readDb())
     };
   }
@@ -35,12 +35,13 @@ exports.handler = async function(event, context) {
       writeDb(books);
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         body: JSON.stringify({ ok: true, count: books.length })
       };
     } catch (error) {
       return {
         statusCode: 400,
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         body: JSON.stringify({ error: 'Geçersiz JSON' })
       };
     }
@@ -48,6 +49,7 @@ exports.handler = async function(event, context) {
 
   return {
     statusCode: 405,
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
     body: JSON.stringify({ error: 'Method not allowed' })
   };
 };
