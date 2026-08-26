@@ -316,13 +316,26 @@ button.danger:hover {
   line-height: 1.5;
 }
 
-.metadata-json {
-  width: 100%;
-  overflow: auto;
-  padding: 14px;
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.metadata-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
   background: #f8fafc;
   border: 1px solid var(--border);
   border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.metadata-field strong {
+  color: var(--muted);
   font-size: 0.82rem;
 }
 

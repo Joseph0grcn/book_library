@@ -277,12 +277,67 @@ function showBookDetail(book) {
   content.appendChild(layout);
 
   const metadataHeading = document.createElement('h3');
-  metadataHeading.textContent = 'Tüm ISBN metadatası';
-  const metadataPre = document.createElement('pre');
-  metadataPre.className = 'metadata-json';
-  metadataPre.textContent = JSON.stringify(metadata, null, 2);
-  content.append(metadataHeading, metadataPre);
+  metadataHeading.textContent = 'Kitap bilgileri';
+  content.appendChild(metadataHeading);
+
+  const metadataGrid = document.createElement('div');
+  metadataGrid.className = 'metadata-grid';
+  Object.entries(metadata).forEach(([key, value]) => {
+    if (key === 'description' || value === null || value === undefined || value === '') return;
+    const field = document.createElement('div');
+    field.className = 'metadata-field';
+    const label = document.createElement('strong');
+    label.textContent = metadataLabel(key);
+    const valueEl = document.createElement('span');
+    valueEl.textContent = formatMetadataValue(value);
+    field.append(label, valueEl);
+    metadataGrid.appendChild(field);
+  });
+  content.appendChild(metadataGrid);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function metadataLabel(key) {
+  const labels = {
+    title: 'Başlık',
+    subtitle: 'Alt başlık',
+    authors: 'Yazar kayıtları',
+    resolved_authors: 'Yazarlar',
+    publish_date: 'Yayın tarihi',
+    publishers: 'Yayınevleri',
+    number_of_pages: 'Sayfa sayısı',
+    physical_format: 'Fiziksel format',
+    physical_dimensions: 'Fiziksel boyutlar',
+    weight: 'Ağırlık',
+    languages: 'Diller',
+    subjects: 'Konular',
+    covers: 'Kapak kimlikleri',
+    works: 'Eser kayıtları',
+    identifiers: 'Diğer kimlikler',
+    classifications: 'Sınıflandırmalar',
+    first_sentence: 'İlk cümle',
+    notes: 'Notlar',
+    links: 'Bağlantılar',
+    ebooks: 'E-kitap bilgileri'
+  };
+  return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatMetadataValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => formatMetadataValue(item)).filter(Boolean).join(', ');
+  }
+  if (value && typeof value === 'object') {
+    if (value.value) return formatMetadataValue(value.value);
+    if (value.name) return formatMetadataValue(value.name);
+    if (value.title) return formatMetadataValue(value.title);
+    if (value.key) return formatMetadataValue(value.key);
+    return Object.entries(value)
+      .map(([key, item]) => `${metadataLabel(key)}: ${formatMetadataValue(item)}`)
+      .filter(Boolean)
+      .join(' • ');
+  }
+  return String(value);
 }
 
 function hideBookDetail() {
