@@ -628,13 +628,15 @@ async function initializeApp() {
   authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     authStatus.textContent = 'Giriş yapılıyor...';
+    authStatus.style.color = 'var(--muted)';
     const { error } = await supabaseClient.auth.signInWithPassword({
       email: document.getElementById('auth-email').value.trim(),
       password: document.getElementById('auth-password').value
     });
     if (error) {
-      authStatus.textContent = error.message;
-      showToast(error.message, 'error');
+      authStatus.textContent = 'Giriş Hatası: ' + error.message;
+      authStatus.style.color = 'var(--danger)';
+      showToast('Giriş Yapılamadı: ' + error.message, 'error');
     } else {
       authStatus.textContent = '';
       showToast('Başarıyla giriş yapıldı.', 'success');
@@ -643,19 +645,23 @@ async function initializeApp() {
 
   registerButton.addEventListener('click', async () => {
     authStatus.textContent = 'Hesap oluşturuluyor...';
+    authStatus.style.color = 'var(--muted)';
     const { data, error } = await supabaseClient.auth.signUp({
       email: document.getElementById('auth-email').value.trim(),
       password: document.getElementById('auth-password').value
     });
     if (error) {
-      authStatus.textContent = error.message;
-      showToast(error.message, 'error');
+      authStatus.textContent = 'Kayıt Hatası: ' + error.message;
+      authStatus.style.color = 'var(--danger)';
+      showToast('Kayıt Başarısız: ' + error.message, 'error');
     } else {
-      const msg = data.session ? 'Hesabınız oluşturuldu.' : 'E-postanızı doğrulayın, ardından giriş yapın.';
+      const msg = data.session ? 'Hesabınız oluşturuldu ve giriş yapıldı.' : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
       authStatus.textContent = msg;
+      authStatus.style.color = 'var(--primary)';
       showToast(msg, 'info');
     }
   });
+
 
   document.getElementById('auth-logout').addEventListener('click', () => {
     supabaseClient.auth.signOut();
