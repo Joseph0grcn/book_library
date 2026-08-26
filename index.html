@@ -60,9 +60,19 @@
           <strong>Barkod / ISBN tara</strong>
           <button type="button" id="close-scanner" class="secondary small">Kapat</button>
         </div>
+        <div class="scanner-modes">
+          <label class="checkbox">
+            <input type="checkbox" id="scan-barcode" checked />
+            <span>Barkod oku</span>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="scan-printed-isbn" />
+            <span>Yazılı ISBN oku</span>
+          </label>
+        </div>
         <video id="scanner-video" autoplay playsinline muted></video>
         <div class="scanner-actions">
-          <button type="button" id="read-printed-isbn" class="secondary">Yazılı ISBN Oku</button>
+          <button type="button" id="read-printed-isbn" class="secondary">Seçili yöntemi çalıştır</button>
         </div>
       </div>
     </div>

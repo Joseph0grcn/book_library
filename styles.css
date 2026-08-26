@@ -215,6 +215,13 @@ button.danger:hover {
   padding: 12px 14px 14px;
 }
 
+.scanner-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 14px 0;
+}
+
 .scanner-actions button {
   flex: 1;
 }
