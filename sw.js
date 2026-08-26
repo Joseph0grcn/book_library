@@ -1,14 +1,22 @@
-const CACHE_NAME = 'kitap-kutuphanem-v2';
+const CACHE_NAME = 'kitap-kutuphanem-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
-  '/app.js',
+  '/js/main.js',
+  '/js/config.js',
+  '/js/storage.js',
+  '/js/ui.js',
+  '/js/toast.js',
+  '/js/badges.js',
+  '/js/quotes.js',
+  '/js/isbn.js',
   '/supabase-config.js',
   '/manifest.webmanifest',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg'
 ];
+
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

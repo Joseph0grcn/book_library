@@ -1,0 +1,155 @@
+import { STORAGE_KEY, PENDING_SYNC_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
+import { showToast } from './toast.js';
+
+export function normalizeBook(rawBook) {
+  return {
+    id: rawBook.id || uid(),
+    title: rawBook.title || 'Başlıksız',
+    author: rawBook.author || '',
+    year: rawBook.year || '',
+    tags: Array.isArray(rawBook.tags) ? rawBook.tags : [],
+    read: !!rawBook.read,
+    status: rawBook.status || (rawBook.read ? 'read' : 'unread'),
+    progress: Number.isFinite(Number(rawBook.progress)) ? Number(rawBook.progress) : (rawBook.read ? 100 : 0),
+    rating: Number.isFinite(Number(rawBook.rating)) ? Number(rawBook.rating) : 0,
+    review: rawBook.review || '',
+    notes: rawBook.notes || '',
+    shelf: rawBook.shelf || 'owned',
+    startDate: rawBook.startDate || rawBook.start_date || '',
+    finishDate: rawBook.finishDate || rawBook.finish_date || '',
+    isbn: rawBook.isbn || '',
+    metadata: rawBook.metadata && typeof rawBook.metadata === 'object' ? rawBook.metadata : {},
+    createdAt: rawBook.createdAt || Date.now()
+  };
+}
+
+export function loadBooks() {
+  try {
+    const raw = localStorage.getItem(getUserStorageKey(STORAGE_KEY));
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeBook) : [];
+  } catch (error) {
+    console.error('Veri okunurken hata oluştu:', error);
+    return [];
+  }
+}
+
+export function saveBooks(books) {
+  localStorage.setItem(getUserStorageKey(STORAGE_KEY), JSON.stringify(books));
+}
+
+export function createBook(bookData) {
+  return normalizeBook({
+    id: uid(),
+    title: bookData.title || 'Başlıksız',
+    author: bookData.author || '',
+    year: bookData.year || '',
+    tags: Array.isArray(bookData.tags) ? bookData.tags : [],
+    read: !!bookData.read,
+    status: bookData.status || (bookData.read ? 'read' : 'unread'),
+    progress: bookData.progress || 0,
+    rating: bookData.rating || 0,
+    review: bookData.review || '',
+    notes: bookData.notes || '',
+    shelf: bookData.shelf || 'owned',
+    startDate: bookData.startDate || '',
+    finishDate: bookData.finishDate || '',
+    isbn: bookData.isbn || '',
+    metadata: bookData.metadata || {},
+    createdAt: Date.now()
+  });
+}
+
+export function queuePendingSync(books) {
+  localStorage.setItem(`${PENDING_SYNC_KEY}_${activeUser?.id || 'local'}`, JSON.stringify(books));
+}
+
+export async function flushPendingSync() {
+  if (!activeUser || !supabaseClient || !navigator.onLine) return;
+  const key = `${PENDING_SYNC_KEY}_${activeUser.id}`;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const books = JSON.parse(raw);
+    const result = await syncBooksToServer(books);
+    if (!result?.fallback) localStorage.removeItem(key);
+  } catch (error) {}
+}
+
+export async function fetchAllBooksFromServer() {
+  if (supabaseClient && activeUser) {
+    const { data, error } = await supabaseClient.from('books').select('*').eq('user_id', activeUser.id).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
+      return data.map((book) => normalizeBook({ ...book, createdAt: book.created_at, startDate: book.start_date, finishDate: book.finish_date }));
+    }
+    showToast('Kütüphane sunucudan alınamadı. Yerel kayıtlar gösteriliyor.', 'info');
+    return loadBooks();
+  }
+  return loadBooks();
+}
+
+export async function syncBooksToServer(books) {
+  if (supabaseClient && activeUser) {
+    const rows = books.map((book) => ({
+      id: book.id,
+      user_id: activeUser.id,
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      tags: book.tags,
+      read: book.read,
+      status: book.status,
+      progress: book.progress,
+      rating: book.rating,
+      review: book.review,
+      notes: book.notes,
+      shelf: book.shelf,
+      start_date: book.startDate || '',
+      finish_date: book.finishDate || '',
+      isbn: book.isbn,
+      metadata: book.metadata,
+      created_at: new Date(book.createdAt).toISOString()
+    }));
+    const { data, error } = await supabaseClient.from('books').upsert(rows).select();
+    if (!error) {
+      const ids = books.map((book) => book.id);
+      if (ids.length) {
+        await supabaseClient.from('books').delete().eq('user_id', activeUser.id).not('id', 'in', `(${ids.join(',')})`);
+      } else {
+        await supabaseClient.from('books').delete().eq('user_id', activeUser.id);
+      }
+      return data;
+    }
+    saveBooks(books);
+    queuePendingSync(books);
+    return { fallback: true };
+  }
+  saveBooks(books);
+  queuePendingSync(books);
+  return { fallback: true };
+}
+
+let realtimeChannel = null;
+
+export function setupRealtimeSubscription(onUpdateCallback) {
+  if (!supabaseClient || !activeUser) return;
+  if (realtimeChannel) {
+    supabaseClient.removeChannel(realtimeChannel);
+  }
+
+  realtimeChannel = supabaseClient
+    .channel('public:books')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'books', filter: `user_id=eq.${activeUser.id}` },
+      async () => {
+        const freshBooks = await fetchAllBooksFromServer();
+        saveBooks(freshBooks);
+        if (typeof onUpdateCallback === 'function') {
+          onUpdateCallback(freshBooks);
+        }
+        showToast('Kütüphane canlı olarak güncellendi.', 'info');
+      }
+    )
+    .subscribe();
+}

@@ -37,6 +37,7 @@
         <p class="intro">Koleksiyonunu tek yerde keşfet, takip et ve büyüt.</p>
       </div>
       <div class="header-actions">
+        <button type="button" id="theme-toggle" class="secondary small">🌙 Koyu Mod</button>
         <span id="connection-status" class="connection-status">Çevrimiçi</span>
         <button type="button" id="pwa-install" class="secondary small hidden">Uygulamayı yükle</button>
         <button type="button" id="auth-logout" class="secondary small">Çıkış yap</button>
@@ -51,7 +52,8 @@
     <nav class="page-nav" aria-label="Sayfa gezinme">
       <button type="button" class="page-link active" data-page="library">Kitaplığım</button>
       <button type="button" class="page-link" data-page="add">Kitap ekle</button>
-      <button type="button" class="page-link" data-page="stats">İstatistik</button>
+      <button type="button" class="page-link" data-page="stats">İstatistik & Rozetler</button>
+      <button type="button" class="page-link" data-page="quotes">Alıntılarım</button>
     </nav>
 
     <section id="library-controls" class="controls">
@@ -84,14 +86,10 @@
             <span>İlerleme <output id="progress-value">0%</output></span>
             <input id="progress" type="range" min="0" max="100" step="5" value="0" />
           </label>
-          <select id="rating" aria-label="Kitap puanı">
-            <option value="0">Puan yok</option>
-            <option value="1">1 / 5</option>
-            <option value="2">2 / 5</option>
-            <option value="3">3 / 5</option>
-            <option value="4">4 / 5</option>
-            <option value="5">5 / 5</option>
-          </select>
+          <div class="rating-field-wrap">
+            <span class="rating-label">Puan:</span>
+            <div id="form-rating-widget"></div>
+          </div>
           <select id="shelf" aria-label="Raf">
             <option value="owned">Sahip olduklarım</option>
             <option value="wishlist">Okuma listem</option>
@@ -109,7 +107,7 @@
             <input id="finish-date" type="date" aria-label="Okumayı bitirme tarihi" />
           </label>
           <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
-          <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı)"></textarea>
+          <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı - **koyu**, *italik*, > alıntı)"></textarea>
         </div>
         <button type="submit" id="save-book">Kitabı Kaydet</button>
       </form>
@@ -196,6 +194,32 @@
           <span id="top-genre-count" class="widget-subtext">0 kitap</span>
         </div>
       </div>
+
+      <!-- BADGES & GAMIFICATION SECTION -->
+      <div class="card-widget badges-section">
+        <div class="widget-header">
+          <strong>Başarımlar ve Rozetler</strong>
+          <span class="widget-subtext">Okuma hedeflerine ulaştıkça rozetler açılır</span>
+        </div>
+        <div id="badges-grid" class="badges-grid"></div>
+      </div>
+    </section>
+
+    <!-- QUOTES COLLECTOR SECTION -->
+    <section id="quotes-section" class="quotes-section page-hidden" aria-label="Alıntı Defteri">
+      <div class="quotes-header card-widget">
+        <div>
+          <h2>Alıntı Defteri</h2>
+          <p class="muted">Okuduğunuz kitaplardan sevdiğiniz cümleleri ve notları kaydedin.</p>
+        </div>
+        <button type="button" id="open-quote-modal" class="primary">+ Alıntı Ekle</button>
+      </div>
+
+      <div class="filters" style="border-top: none; margin-top: 10px; padding-top: 0;">
+        <input id="quote-search" type="search" placeholder="Alıntılarda ara..." />
+      </div>
+
+      <div id="quotes-list" class="quotes-grid"></div>
     </section>
 
     <div id="scanner-modal" class="scanner-modal hidden">
@@ -272,18 +296,35 @@
           <label class="field-label"><span>Bitirme Tarihi</span><input id="edit-finish-date" type="date" /></label>
           <label class="progress-control"><span>İlerleme <output id="edit-progress-value">0%</output></span><input id="edit-progress" type="range" min="0" max="100" step="5" value="0" /></label>
           <label class="field-label"><span>Puan</span>
-            <select id="edit-rating">
-              <option value="0">Puan yok</option>
-              <option value="1">1 / 5</option>
-              <option value="2">2 / 5</option>
-              <option value="3">3 / 5</option>
-              <option value="4">4 / 5</option>
-              <option value="5">5 / 5</option>
-            </select>
+            <div id="edit-rating-widget"></div>
           </label>
           <label class="field-label"><span>Kısa Yorum</span><textarea id="edit-review" placeholder="Kısa yorum"></textarea></label>
-          <label class="field-label"><span>Notlar ve Alıntılar</span><textarea id="edit-notes" placeholder="Notlar ve alıntılar"></textarea></label>
+          <label class="field-label"><span>Notlar ve Alıntılar (Markdown destekli)</span><textarea id="edit-notes" placeholder="Notlar ve alıntılar"></textarea></label>
           <button type="submit">Değişiklikleri kaydet</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ADD QUOTE MODAL -->
+    <div id="quote-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title">
+      <div class="edit-window">
+        <div class="scanner-header">
+          <strong id="quote-modal-title">Yeni Alıntı Ekle</strong>
+          <button type="button" id="close-quote-modal" class="secondary small">Kapat</button>
+        </div>
+        <form id="quote-form" class="edit-form">
+          <label class="field-label"><span>Kitap Seçin</span>
+            <select id="quote-book-select">
+              <option value="">Kitap seçin</option>
+            </select>
+          </label>
+          <label class="field-label"><span>Veya Başlık Yazın</span><input id="quote-book-title" type="text" placeholder="Kitap Başlığı" /></label>
+          <label class="field-label"><span>Yazar</span><input id="quote-author" type="text" placeholder="Yazar adı" /></label>
+          <label class="field-label"><span>Sayfa Numarası</span><input id="quote-page" type="text" placeholder="örn. s. 42" /></label>
+          <label class="field-label"><span>Alıntı Metni * (Markdown: **koyu**, *italik*, > alıntı)</span>
+            <textarea id="quote-text" placeholder="Alıntıyı buraya yazın..." required></textarea>
+          </label>
+          <button type="submit">Alıntıyı Kaydet</button>
         </form>
       </div>
     </div>
@@ -298,11 +339,15 @@
       </button>
       <button type="button" class="tab" data-page="add">
         <span class="tab-icon" aria-hidden="true">＋</span>
-        <span>Kitap ekle</span>
+        <span>Ekle</span>
       </button>
       <button type="button" class="tab" data-page="stats">
         <span class="tab-icon" aria-hidden="true">◔</span>
         <span>İstatistik</span>
+      </button>
+      <button type="button" class="tab" data-page="quotes">
+        <span class="tab-icon" aria-hidden="true">❞</span>
+        <span>Alıntılar</span>
       </button>
       <button type="button" class="tab" data-page="logout">
         <span class="tab-icon" aria-hidden="true">↪</span>
@@ -311,11 +356,13 @@
     </nav>
   </div>
 
+  <div id="toast-container" class="toast-container"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
@@ -323,3 +370,4 @@
   </script>
 </body>
 </html>
+
