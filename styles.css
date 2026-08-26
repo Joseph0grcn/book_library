@@ -408,6 +408,10 @@ button.danger:hover {
   font-size: 0.92rem;
 }
 
+.mobile-tabbar {
+  display: none;
+}
+
 .scanner-modal {
   position: fixed;
   inset: 0;
@@ -631,7 +635,7 @@ button.danger:hover {
 
 @media (max-width: 640px) {
   body {
-    padding: 16px;
+    padding: 20px 12px 104px;
   }
 
   header {
@@ -673,5 +677,74 @@ button.danger:hover {
 
   .dashboard-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .controls {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .mode-switch {
+    position: sticky;
+    top: 8px;
+    z-index: 5;
+    padding: 4px;
+    background: rgba(237, 244, 241, 0.92);
+    border-radius: 13px;
+    backdrop-filter: blur(10px);
+  }
+
+  .mode-switch .mode {
+    min-height: 44px;
+  }
+
+  .filters {
+    gap: 8px;
+  }
+
+  .mobile-tabbar {
+    position: fixed;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 8px 6px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(29, 70, 62, 0.18);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-tabbar .tab {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 2px;
+    flex-direction: column;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .mobile-tabbar .tab:hover {
+    background: transparent;
+    color: var(--primary);
+  }
+
+  .mobile-tabbar .tab.active {
+    background: var(--soft);
+    color: var(--primary);
+  }
+
+  .tab-icon {
+    font-size: 1.3rem;
+    line-height: 1;
   }
 }

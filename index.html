@@ -48,7 +48,7 @@
       </div>
     </header>
 
-    <section class="controls">
+    <section id="library-controls" class="controls">
       <div class="mode-switch">
         <button type="button" id="mode-manual" class="mode active">Manuel</button>
         <button type="button" id="mode-isbn" class="mode secondary">ISBN / Barkod</button>
@@ -180,6 +180,25 @@
 
     <section id="status" class="status"></section>
     <section id="list" class="list"></section>
+
+    <nav class="mobile-tabbar" aria-label="Ana gezinme">
+      <button type="button" class="tab active" data-tab-target="list">
+        <span class="tab-icon" aria-hidden="true">⌂</span>
+        <span>Kitaplığım</span>
+      </button>
+      <button type="button" class="tab" data-tab-target="library-controls">
+        <span class="tab-icon" aria-hidden="true">＋</span>
+        <span>Kitap ekle</span>
+      </button>
+      <button type="button" class="tab" data-tab-target="dashboard-stats">
+        <span class="tab-icon" aria-hidden="true">◔</span>
+        <span>İstatistik</span>
+      </button>
+      <button type="button" class="tab" data-tab-target="auth-logout">
+        <span class="tab-icon" aria-hidden="true">↪</span>
+        <span>Çıkış</span>
+      </button>
+    </nav>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>

@@ -1007,6 +1007,19 @@ async function initializeApp() {
   const authForm = document.getElementById('auth-form');
   const registerButton = document.getElementById('auth-register');
 
+  document.querySelectorAll('[data-tab-target]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const targetId = tab.dataset.tabTarget;
+      if (targetId === 'auth-logout') {
+        supabaseClient?.auth.signOut();
+        return;
+      }
+      if (targetId === 'library-controls') document.getElementById('mode-isbn')?.click();
+      document.querySelectorAll('.mobile-tabbar .tab').forEach((item) => item.classList.toggle('active', item === tab));
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   if (!supabaseClient) {
     authStatus.textContent = 'Supabase ayarları yapılmamış. supabase-config.js dosyasını doldurun.';
     return;
