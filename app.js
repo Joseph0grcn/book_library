@@ -246,6 +246,7 @@ function setup() {
   const scannerModal = document.getElementById('scanner-modal');
   const closeScanner = document.getElementById('close-scanner');
   const scannerVideo = document.getElementById('scanner-video');
+  const readPrintedIsbn = document.getElementById('read-printed-isbn');
   let scannerLoopToken = 0;
 
   function setScannerVisible(isVisible) {
@@ -425,6 +426,54 @@ function setup() {
       stopScanner();
     }
   }
+
+  readPrintedIsbn.addEventListener('click', async () => {
+    if (!scannerVideo.videoWidth || !scannerVideo.videoHeight) {
+      setStatus('Kamera görüntüsü hazır değil. Birkaç saniye bekleyin.', true);
+      return;
+    }
+
+    if (!window.Tesseract) {
+      setStatus('Yazı okuma kütüphanesi yüklenemedi. ISBN numarasını elle yazabilirsiniz.', true);
+      return;
+    }
+
+    readPrintedIsbn.disabled = true;
+    setStatus('Yazılı ISBN okunuyor...');
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = scannerVideo.videoWidth;
+      canvas.height = scannerVideo.videoHeight;
+      canvas.getContext('2d').drawImage(scannerVideo, 0, 0, canvas.width, canvas.height);
+
+      const result = await window.Tesseract.recognize(canvas, 'eng');
+      const text = result.data.text.replace(/[Oo]/g, '0').replace(/[Il]/g, '1');
+      const candidates = text.match(/(?:97[89][\s-]?)?[0-9Xx](?:[\s-]?[0-9Xx]){8,16}/g) || [];
+      const isbn = candidates
+        .map((candidate) => candidate.replace(/[^0-9Xx]/g, ''))
+        .find((candidate) => candidate.length === 10 || candidate.length === 13);
+
+      if (!isbn) {
+        setStatus('Yazılı ISBN bulunamadı. Numarayı daha yakından ve aydınlıkta gösterin.', true);
+        return;
+      }
+
+      isbnInput.value = isbn;
+      stopScanner();
+      setStatus('ISBN algılandı. Bilgi getiriliyor...');
+      const book = await fetchBookMetadata(isbn);
+      document.getElementById('title').value = book.title;
+      document.getElementById('author').value = book.author;
+      document.getElementById('year').value = book.year;
+      document.getElementById('tags').value = book.tags.join(', ');
+      setStatus('Yazılı ISBN bilgisi hazır. Kaydet butonuna basabilirsiniz.');
+    } catch (error) {
+      setStatus('Yazılı ISBN okunamadı. Numarayı elle yazabilirsiniz.', true);
+    } finally {
+      readPrintedIsbn.disabled = false;
+    }
+  });
 
   document.getElementById('scan-camera').addEventListener('click', openScanner);
   closeScanner.addEventListener('click', () => {

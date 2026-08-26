@@ -6,6 +6,7 @@ Bu proje, sahip olduğunuz kitapları takip etmek için hazırlanmış, Netlify 
 - Manuel kitap ekleme
 - ISBN / barkod girişi ile otomatik kitap bilgisi çekme
 - Kamera erişimi ile barkod tarama (tarayıcı destekliyse)
+- Kamera görüntüsündeki yazılı ISBN'yi OCR ile okuma
 - Okundu / okunmadı takibi
 - Arama ve filtreleme
 - Düzenleme ve silme

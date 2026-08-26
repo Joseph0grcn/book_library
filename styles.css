@@ -209,6 +209,16 @@ button.danger:hover {
   background: #000;
 }
 
+.scanner-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
+.scanner-actions button {
+  flex: 1;
+}
+
 .card {
   display: flex;
   justify-content: space-between;

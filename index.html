@@ -61,6 +61,9 @@
           <button type="button" id="close-scanner" class="secondary small">Kapat</button>
         </div>
         <video id="scanner-video" autoplay playsinline muted></video>
+        <div class="scanner-actions">
+          <button type="button" id="read-printed-isbn" class="secondary">Yazılı ISBN Oku</button>
+        </div>
       </div>
     </div>
 
@@ -69,6 +72,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
