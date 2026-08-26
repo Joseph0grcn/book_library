@@ -128,7 +128,7 @@ function setup() {
   function renderQuickScanQueue() {
     quickScanCount.textContent = String(quickScanQueue.length);
     quickScanList.innerHTML = quickScanQueue.length
-      ? quickScanQueue.map((isbn) => `<span>${escapeHtml(isbn)}</span>`).join('')
+      ? quickScanQueue.map((isbn) => `<button type="button" class="quick-scan-item" data-quick-isbn="${escapeHtml(isbn)}" title="ISBN'i listeden çıkar">${escapeHtml(isbn)}</button>`).join('')
       : '<span class="muted">Henüz ISBN okutulmadı.</span>';
   }
 
@@ -410,6 +410,13 @@ function setup() {
   scanPrintedIsbn.addEventListener('change', () => {
     if (scanPrintedIsbn.checked) scanBarcode.checked = false;
     if (!scanBarcode.checked && !scanPrintedIsbn.checked) scanBarcode.checked = true;
+  });
+
+  quickScanList.addEventListener('click', (event) => {
+    const item = event.target.closest('.quick-scan-item');
+    if (!item) return;
+    quickScanQueue = quickScanQueue.filter((isbn) => isbn !== item.dataset.quickIsbn);
+    renderQuickScanQueue();
   });
 
   document.getElementById('scan-camera').addEventListener('click', () => {

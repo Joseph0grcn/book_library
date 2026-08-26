@@ -817,16 +817,17 @@ button.danger:hover {
   overflow-y: auto;
 }
 
-#quick-scan-list span {
+#quick-scan-list .quick-scan-item {
   padding: 4px 7px;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
   background: var(--soft);
   font-size: 0.78rem;
+  width: auto;
 }
 
-.quick-scan-queue button {
+.quick-scan-queue > button {
   width: 100%;
 }
 
