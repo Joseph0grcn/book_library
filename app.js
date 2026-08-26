@@ -1010,6 +1010,8 @@ async function initializeApp() {
   const bookForm = document.getElementById('book-form');
   const modeSwitch = document.querySelector('.mode-switch');
   const filters = document.querySelector('.filters');
+  const filterMenu = document.getElementById('filter-menu');
+  const filterMenuToggle = document.getElementById('filter-menu-toggle');
   const stats = document.getElementById('dashboard-stats');
   const list = document.getElementById('list');
 
@@ -1041,6 +1043,17 @@ async function initializeApp() {
 
   const initialPage = window.location.hash.slice(1);
   setPage(['add', 'stats'].includes(initialPage) ? initialPage : 'library');
+
+  filterMenuToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const isOpen = filterMenu.classList.toggle('is-open');
+    filterMenuToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+  filterMenu.addEventListener('click', (event) => event.stopPropagation());
+  document.addEventListener('click', () => {
+    filterMenu.classList.remove('is-open');
+    filterMenuToggle.setAttribute('aria-expanded', 'false');
+  });
 
   if (!supabaseClient) {
     authStatus.textContent = 'Supabase ayarları yapılmamış. supabase-config.js dosyasını doldurun.';
