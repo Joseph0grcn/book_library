@@ -1,4 +1,13 @@
-create table if not exists public.books (
+-- ========================================================
+-- SUPABASE VERİTABANI SIFIRLAMA VE YENİDEN OLUŞTURMA KODU
+-- ========================================================
+-- Bu kodu Supabase Dashboard -> SQL Editor alanına yapıştırıp "Run" butonuna basarak çalıştırabilirsiniz.
+
+-- 1. Mevcut tabloyu ve bağlı izinleri tamamen temizler (Sıfırlama)
+drop table if exists public.books cascade;
+
+-- 2. Kitaplar tablosunu tüm güncel sütunlarıyla yeniden oluşturur
+create table public.books (
   id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
@@ -12,29 +21,38 @@ create table if not exists public.books (
   review text default '',
   notes text default '',
   shelf text not null default 'owned',
+  start_date text default '',
+  finish_date text default '',
   isbn text default '',
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
+-- 3. Satır Düzeyinde Güvenliği (RLS) Aktifleştirir
 alter table public.books enable row level security;
 
-drop policy if exists "Users can view their own books" on public.books;
-create policy "Users can view their own books" on public.books for select using (auth.uid() = user_id);
+-- 4. Kullanıcıların Sadece Kendi Kitaplarına Erişebileceği Güvenlik Politikaları (RLS Policies)
+create policy "Users can view their own books"
+  on public.books for select
+  using (auth.uid() = user_id);
 
-drop policy if exists "Users can insert their own books" on public.books;
-create policy "Users can insert their own books" on public.books for insert with check (auth.uid() = user_id);
+create policy "Users can insert their own books"
+  on public.books for insert
+  with check (auth.uid() = user_id);
 
-drop policy if exists "Users can update their own books" on public.books;
-create policy "Users can update their own books" on public.books for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can update their own books"
+  on public.books for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
-drop policy if exists "Users can delete their own books" on public.books;
-create policy "Users can delete their own books" on public.books for delete using (auth.uid() = user_id);
+create policy "Users can delete their own books"
+  on public.books for delete
+  using (auth.uid() = user_id);
 
-create index if not exists books_user_id_idx on public.books(user_id);
-create index if not exists books_user_isbn_idx on public.books(user_id, isbn);
+-- 5. Hızlı Arama ve Filtreleme İndeksleri
+create index books_user_id_idx on public.books(user_id);
+create index books_user_isbn_idx on public.books(user_id, isbn);
+create index books_created_at_idx on public.books(created_at desc);
 
-alter table public.books add column if not exists start_date text default '';
-alter table public.books add column if not exists finish_date text default '';
-alter table public.books add column if not exists shelf text not null default 'owned';
-
+-- 6. Supabase Realtime (Canlı Cihaz Eşitleme) Yayınına Ekleme
+alter publication supabase_realtime add table public.books;
