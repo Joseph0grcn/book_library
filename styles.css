@@ -649,6 +649,11 @@ button.danger:hover {
   color: var(--muted);
 }
 
+.card .muted {
+  white-space: pre-line;
+  line-height: 1.55;
+}
+
 .tags {
   color: var(--muted);
   font-size: 0.88rem;

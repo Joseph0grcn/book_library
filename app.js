@@ -236,7 +236,7 @@ function render() {
       pageCount ? `${pageCount} sayfa` : '',
       book.isbn ? `ISBN: ${book.isbn}` : ''
     ];
-    detailsEl.textContent = detailParts.filter(Boolean).join(' • ');
+    detailsEl.textContent = detailParts.filter(Boolean).join('\n');
 
     const tagsEl = document.createElement('div');
     tagsEl.className = 'tags';
