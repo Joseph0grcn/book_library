@@ -407,6 +407,30 @@ export function showBookDetail(book) {
   layout.appendChild(summary);
   content.appendChild(layout);
 
+  const metadataEntries = Object.entries(metadata).filter(([key, value]) => {
+    return key !== 'description' && value !== null && value !== undefined && value !== '';
+  });
+
+  if (metadataEntries.length) {
+    const metadataHeading = document.createElement('h3');
+    metadataHeading.textContent = 'Kitap bilgileri';
+    content.appendChild(metadataHeading);
+
+    const metadataGrid = document.createElement('div');
+    metadataGrid.className = 'metadata-grid';
+    metadataEntries.forEach(([key, value]) => {
+      const field = document.createElement('div');
+      field.className = 'metadata-field';
+      const label = document.createElement('strong');
+      label.textContent = metadataLabel(key);
+      const valueEl = document.createElement('span');
+      valueEl.textContent = formatMetadataValue(value);
+      field.append(label, valueEl);
+      metadataGrid.appendChild(field);
+    });
+    content.appendChild(metadataGrid);
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -435,6 +459,63 @@ export function getBookCoverUrl(book) {
   if (metadata.cover_i) return `https://covers.openlibrary.org/b/id/${encodeURIComponent(metadata.cover_i)}-L.jpg`;
   if (googleCoverUrls && googleCoverUrls.length) return googleCoverUrls[0];
   return '';
+}
+
+function metadataLabel(key) {
+  const labels = {
+    title: 'Başlık',
+    subtitle: 'Alt başlık',
+    authors: 'Yazar kayıtları',
+    resolved_authors: 'Yazarlar',
+    publish_date: 'Yayın tarihi',
+    publishedDate: 'Yayın tarihi',
+    first_publish_year: 'İlk yayın yılı',
+    publishers: 'Yayınevleri',
+    publisher: 'Yayınevi',
+    number_of_pages: 'Sayfa sayısı',
+    pageCount: 'Sayfa sayısı',
+    physical_format: 'Fiziksel format',
+    physical_dimensions: 'Fiziksel boyutlar',
+    weight: 'Ağırlık',
+    languages: 'Diller',
+    subjects: 'Konular',
+    subject: 'Konular',
+    categories: 'Kategoriler',
+    covers: 'Kapak kimlikleri',
+    cover_i: 'Kapak kimliği',
+    imageLinks: 'Kapak bağlantıları',
+    works: 'Eser kayıtları',
+    identifiers: 'Diğer kimlikler',
+    industryIdentifiers: 'ISBN kayıtları',
+    classifications: 'Sınıflandırmalar',
+    first_sentence: 'İlk cümle',
+    notes: 'Notlar',
+    links: 'Bağlantılar',
+    ebooks: 'E-kitap bilgileri',
+    source_api: 'Kaynak',
+    lookup_isbn: 'Aranan ISBN',
+    lookup_at: 'Sorgu zamanı',
+    google_volume_id: 'Google Books kaydı'
+  };
+  return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatMetadataValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => formatMetadataValue(item)).filter(Boolean).join(', ');
+  }
+  if (value && typeof value === 'object') {
+    if (value.value) return formatMetadataValue(value.value);
+    if (value.name) return formatMetadataValue(value.name);
+    if (value.title) return formatMetadataValue(value.title);
+    if (value.identifier) return formatMetadataValue(value.identifier);
+    if (value.key) return formatMetadataValue(value.key);
+    return Object.entries(value)
+      .map(([key, item]) => `${metadataLabel(key)}: ${formatMetadataValue(item)}`)
+      .filter(Boolean)
+      .join(' • ');
+  }
+  return String(value);
 }
 
 export function openCoverModal(coverUrl, title) {
