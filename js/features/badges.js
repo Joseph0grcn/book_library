@@ -68,7 +68,7 @@ export function getUnlockedBadges() {
   try {
     const raw = localStorage.getItem(getUserStorageKey(BADGES_KEY));
     return raw ? JSON.parse(raw) : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }

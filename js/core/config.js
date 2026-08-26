@@ -4,13 +4,15 @@ export const QUOTES_KEY = 'book_library_quotes';
 export const BADGES_KEY = 'book_library_badges';
 export const THEME_KEY = 'book_library_theme';
 export const ANNUAL_GOAL_KEY = 'book_library_annual_goal';
+export const SYNC_STATE_KEY = 'book_library_sync_state';
 
+const runtimeWindow = typeof window !== 'undefined' ? window : {};
 export const supabaseClient = (
-  window.supabase &&
-  window.SUPABASE_URL &&
-  window.SUPABASE_ANON_KEY &&
-  !window.SUPABASE_URL.includes('YOUR_')
-) ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null;
+  runtimeWindow.supabase &&
+  runtimeWindow.SUPABASE_URL &&
+  runtimeWindow.SUPABASE_ANON_KEY &&
+  !runtimeWindow.SUPABASE_URL.includes('YOUR_')
+) ? runtimeWindow.supabase.createClient(runtimeWindow.SUPABASE_URL, runtimeWindow.SUPABASE_ANON_KEY) : null;
 
 export let activeUser = null;
 

@@ -18,6 +18,9 @@ Kitap Kütüphanem, build adımı olmayan, tarayıcıda çalışan bir PWA'dır.
 - `js/features/isbn.js`: ISBN doğrulama/dönüştürme, Google Books ve Open Library sorguları, yinelenen kitap kontrolü.
 - `js/features/quotes.js`: Alıntıların yerel saklanması, basit Markdown gösterimi ve kopyalama/silme işlemleri.
 - `js/features/badges.js`: Rozet koşulları ve rozet görünümü.
+- `tests/`: Node.js yerleşik testleri; ISBN ve kitap veri sözleşmesinin temel senaryoları.
+- `scripts/check.mjs`: Build gerektirmeyen statik proje doğrulamaları.
+- `package.json`, `eslint.config.js`, `.prettierrc.json`: Geliştirme komutları ve kalite kuralları.
 - `supabase-schema.sql`: `books` tablosu, RLS politikaları ve indeksler.
 - `supabase-config.js`: Yalnızca frontend'de bulunabilecek Supabase URL/anon anahtarı ve isteğe bağlı Google Books anahtarı.
 - `sw.js`: Uygulama kabuğu cache'i ve ağdan öncelikli PWA stratejisi.
@@ -35,17 +38,18 @@ Normal kayıt, düzenleme ve durum değişikliği Supabase'e upsert yapar; uzak 
 
 ## Geliştirme kuralları
 
-1. Build sistemi yoktur; dosyalar tarayıcı ES modülleri olarak doğrudan çalışır.
+1. Uygulama için build sistemi yoktur; dosyalar tarayıcı ES modülleri olarak doğrudan çalışır. Kalite araçları Node.js üzerinden çalışır.
 2. Yeni kullanıcı verileri için kullanıcı anahtarı `getUserStorageKey()` ile oluşturulmalıdır.
 3. API yanıtları eksik veya hatalı olabilir; alanlara erişmeden önce tip kontrolü yapın.
 4. Kullanıcı metni DOM'a yazılırken `textContent` tercih edin. HTML üretmek gerekiyorsa mevcut escape yardımcılarını kullanın.
 5. Kitap ayrıntısında kapak için `getBookCoverUrl()` kullanın; kapak yoksa ayrıntı sayfası yine çalışmalıdır.
 6. CDN veya yeni ağ bağımlılığı eklenirse `sw.js` ve çevrimdışı davranışını güncelleyin.
 7. Değişiklik sonrası `git diff --check`, ilgili dosya aramaları ve mümkünse gerçek tarayıcı testi yapılmalıdır.
+8. Değişiklik tamamlanmadan `npm run check`, `npm test`, `npm run lint` ve `npm run format:check` çalıştırılmalıdır.
 
 ## Bilinen çalışma sınırları
 
-- Bu depo npm projesi değildir; `package.json` ve otomatik test runner yoktur.
+- Uygulamanın build adımı yoktur; kalite araçları `package.json` üzerinden yönetilir ve Node.js yerleşik test runner'ı kullanılır.
 - Kamera, OCR ve Google Books özellikleri ağ/tarayıcı izinlerine bağlıdır.
 - `supabase-config.js` içindeki anahtar public anon anahtar olmalıdır; service-role anahtarı kesinlikle eklenmemelidir.
 - Supabase tarafında şema değişirse önce `supabase-schema.sql` ve `storage.js` birlikte güncellenmelidir.

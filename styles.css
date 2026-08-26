@@ -458,6 +458,17 @@ button.danger:hover {
   right: 58px;
 }
 
+.year-filter {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.year-filter input {
+  width: 100%;
+}
+
 .filter-menu select,
 .filter-menu button {
   width: 100%;
@@ -889,6 +900,26 @@ button.danger:hover {
 .metadata-field strong {
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.related-books {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.related-book {
+  width: 100%;
+  text-align: left;
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.related-book:hover {
+  background: var(--primary);
+  color: white;
 }
 
 @media (max-width: 640px) {

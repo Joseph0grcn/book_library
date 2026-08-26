@@ -1,6 +1,5 @@
 import { THEME_KEY, ANNUAL_GOAL_KEY } from '../core/config.js';
-import { loadBooks, saveBooks, syncBooksToServer, createBook, normalizeBook } from '../core/storage.js';
-import { findDuplicateBook } from '../features/isbn.js';
+import { loadBooks, saveBooks, syncBooksToServer, normalizeBook } from '../core/storage.js';
 import { showToast } from './toast.js';
 import { renderBadges } from '../features/badges.js';
 import { renderQuotes } from '../features/quotes.js';
@@ -200,6 +199,10 @@ export function render() {
   const statusFilter = document.getElementById('status-filter')?.value || 'all';
   const ratingFilter = document.getElementById('rating-filter')?.value || 'all';
   const shelfFilter = document.getElementById('shelf-filter')?.value || 'all';
+  const formatFilter = document.getElementById('format-filter')?.value || 'all';
+  const tagQuery = (document.getElementById('tag-filter')?.value || '').trim().toLowerCase();
+  const yearFrom = Number(document.getElementById('year-from-filter')?.value) || 0;
+  const yearTo = Number(document.getElementById('year-to-filter')?.value) || 0;
 
   const visible = books.filter((book) => {
     if (filter === 'read' && !book.read) return false;
@@ -207,9 +210,19 @@ export function render() {
     if (statusFilter !== 'all' && book.status !== statusFilter) return false;
     if (ratingFilter !== 'all' && book.rating < Number(ratingFilter)) return false;
     if (shelfFilter !== 'all' && book.shelf !== shelfFilter) return false;
+    const metadata = book.metadata || {};
+    const format = String(metadata.physical_format || metadata.printType || '').toLowerCase();
+    if (formatFilter !== 'all' && !format.includes(formatFilter)) return false;
+    const tags = (book.tags || []).map((tag) => String(tag).toLowerCase());
+    if (tagQuery && !tags.some((tag) => tag.includes(tagQuery))) return false;
+    const year = Number.parseInt(book.year, 10) || 0;
+    if (yearFrom && (!year || year < yearFrom)) return false;
+    if (yearTo && (!year || year > yearTo)) return false;
     if (!query) return true;
 
-    const haystack = `${book.title || ''} ${book.author || ''}`.toLowerCase();
+    const publishers = Array.isArray(metadata.publishers) ? metadata.publishers.join(' ') : (metadata.publisher || '');
+    const categories = Array.isArray(metadata.categories) ? metadata.categories.join(' ') : (metadata.categories || '');
+    const haystack = `${book.title || ''} ${book.author || ''} ${book.isbn || ''} ${tags.join(' ')} ${publishers} ${categories}`.toLowerCase();
     return haystack.includes(query);
   });
 
@@ -429,6 +442,30 @@ export function showBookDetail(book) {
       metadataGrid.appendChild(field);
     });
     content.appendChild(metadataGrid);
+  }
+
+  const relatedBooks = loadBooks().filter((candidate) => {
+    if (candidate.id === book.id) return false;
+    const sameAuthor = book.author && candidate.author && candidate.author.toLowerCase() === book.author.toLowerCase();
+    const sharedTag = (book.tags || []).some((tag) => (candidate.tags || []).some((otherTag) => String(otherTag).toLowerCase() === String(tag).toLowerCase()));
+    return sameAuthor || sharedTag;
+  }).slice(0, 4);
+
+  if (relatedBooks.length) {
+    const relatedHeading = document.createElement('h3');
+    relatedHeading.textContent = 'İlişkili kitaplar';
+    content.appendChild(relatedHeading);
+    const relatedList = document.createElement('div');
+    relatedList.className = 'related-books';
+    relatedBooks.forEach((relatedBook) => {
+      const relatedButton = document.createElement('button');
+      relatedButton.type = 'button';
+      relatedButton.className = 'related-book';
+      relatedButton.textContent = `${relatedBook.title}${relatedBook.author ? ` · ${relatedBook.author}` : ''}`;
+      relatedButton.addEventListener('click', () => showBookDetail(relatedBook));
+      relatedList.appendChild(relatedButton);
+    });
+    content.appendChild(relatedList);
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });

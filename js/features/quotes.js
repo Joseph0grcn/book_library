@@ -28,7 +28,7 @@ export function loadQuotes() {
     const raw = localStorage.getItem(getUserStorageKey(QUOTES_KEY));
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -109,7 +109,7 @@ export function renderQuotes() {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard API kullanılamıyor');
         await navigator.clipboard.writeText(btn.dataset.text);
         showToast('Alıntı panoya kopyalandı.', 'success');
-      } catch (error) {
+      } catch {
         showToast('Alıntı panoya kopyalanamadı.', 'error');
       }
     });

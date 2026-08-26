@@ -12,6 +12,8 @@ Kitap Kütüphanem, kişisel kitap koleksiyonunu takip etmek için hazırlanmı�
 - Okundu / okunuyor / okunacak takibi
 - İlerleme, puan, raf, yorum ve not alanları
 - Arama ve filtreleme
+- ISBN, etiket, kategori, format ve yıl aralığına göre gelişmiş filtreleme
+- İlişkili kitap önerileri
 - Düzenleme ve silme
 - Alıntı defteri
 - Okuma istatistikleri ve rozetler
@@ -20,6 +22,7 @@ Kitap Kütüphanem, kişisel kitap koleksiyonunu takip etmek için hazırlanmı�
 - Netlify üzerinde yayınlanabilir statik yapı
 - Telefona ve masaüstüne kurulabilen PWA desteği
 - Supabase ile kullanıcı hesabı ve kişiye özel kitaplık
+- Senkronizasyon durumunu gösteren çevrimiçi/çevrimdışı durum bilgisi
 
 ## Yerel Çalıştırma
 
@@ -35,6 +38,20 @@ Ardından tarayıcıda açın:
 ```text
 http://localhost:8000
 ```
+
+## Geliştirme Kontrolleri
+
+Node.js kurulumundan sonra proje kökünde şu komutlar çalıştırılabilir:
+
+```bash
+npm install
+npm run check
+npm test
+npm run lint
+npm run format:check
+```
+
+`npm run check` JavaScript sözdizimini, JSON dosyalarını, HTML ID'lerini ve göreli import yollarını kontrol eder. `npm test` ISBN ve kitap veri sözleşmesi testlerini çalıştırır. GitHub Actions aynı kontrolleri her push ve pull request'te otomatik çalıştırır.
 
 Supabase ayarları yoksa veya bağlantı başarısızsa uygulamayı "Yerel Modda Kullan" seçeneğiyle yalnızca bu tarayıcıdaki `localStorage` üzerinden kullanabilirsiniz.
 

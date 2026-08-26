@@ -1,4 +1,4 @@
-import { STORAGE_KEY, PENDING_SYNC_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
+import { STORAGE_KEY, PENDING_SYNC_KEY, SYNC_STATE_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
 import { showToast } from '../ui/toast.js';
 
 export function normalizeBook(rawBook = {}) {
@@ -84,11 +84,28 @@ export function createBook(bookData) {
 }
 
 export function queuePendingSync(books, options = {}) {
+  setSyncState('pending');
   localStorage.setItem(`${PENDING_SYNC_KEY}_${activeUser?.id || 'local'}`, JSON.stringify({
     version: 1,
     allowDelete: !!options.allowDelete,
     books
   }));
+}
+
+export function getSyncState() {
+  try {
+    return JSON.parse(localStorage.getItem(getUserStorageKey(SYNC_STATE_KEY)) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function setSyncState(status, error = '') {
+  const state = { status, updatedAt: new Date().toISOString(), error };
+  localStorage.setItem(getUserStorageKey(SYNC_STATE_KEY), JSON.stringify(state));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('book-library:sync-status', { detail: state }));
+  }
 }
 
 export async function flushPendingSync() {
@@ -106,7 +123,9 @@ export async function flushPendingSync() {
     }
     const result = await syncBooksToServer(books, { allowDelete: !isLegacyQueue && !!parsed.allowDelete });
     if (!result?.fallback) localStorage.removeItem(key);
-  } catch (error) {}
+  } catch (error) {
+    setSyncState('error', error.message);
+  }
 }
 
 export async function fetchAllBooksFromServer() {
@@ -125,6 +144,7 @@ export async function syncBooksToServer(books, options = {}) {
   const allowDelete = !!options.allowDelete;
 
   if (supabaseClient && activeUser) {
+    setSyncState('syncing');
     const rows = books.map((book) => ({
       id: book.id,
       user_id: activeUser.id,
@@ -151,6 +171,7 @@ export async function syncBooksToServer(books, options = {}) {
       if (error) {
         saveBooks(books);
         queuePendingSync(books, { allowDelete });
+        setSyncState('error', error.message);
         return { fallback: true };
       }
       data = upsertedRows;
@@ -172,14 +193,16 @@ export async function syncBooksToServer(books, options = {}) {
       if (deleteResult?.error) {
         saveBooks(books);
         queuePendingSync(books, { allowDelete });
+        setSyncState('error', deleteResult.error.message);
         return { fallback: true };
       }
     }
 
+    setSyncState('synced');
     return data;
   }
   saveBooks(books);
-  queuePendingSync(books, { allowDelete });
+  setSyncState('local');
   return { fallback: true };
 }
 

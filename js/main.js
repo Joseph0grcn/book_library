@@ -1,9 +1,9 @@
-import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './core/config.js';
+import { supabaseClient, setActiveUser, getUserStorageKey } from './core/config.js';
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription } from './core/storage.js';
-import { initTheme, setupStarRating, getStarRatingValue, render, showBookDetail, hideBookDetail, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState } from './core/storage.js';
+import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
 let deferredInstallPrompt = null;
@@ -30,18 +30,22 @@ function setupPwaUi() {
 
   const updateConnectionStatus = () => {
     if (connectionStatus) {
-      connectionStatus.textContent = navigator.onLine ? 'Çevrimiçi' : 'Çevrimdışı';
+      const syncState = getSyncState();
+      const syncLabel = { syncing: 'Senkronize ediliyor', pending: 'Bekleyen senkron', error: 'Senkronizasyon hatası', local: 'Yerel mod', synced: 'Senkronize' }[syncState.status];
+      connectionStatus.textContent = navigator.onLine ? (syncLabel || 'Çevrimiçi') : 'Çevrimdışı';
       connectionStatus.classList.toggle('offline', !navigator.onLine);
+      connectionStatus.classList.toggle('sync-error', syncState.status === 'error');
     }
   };
 
+  window.addEventListener('book-library:sync-status', updateConnectionStatus);
   window.addEventListener('online', updateConnectionStatus);
   window.addEventListener('online', async () => {
     try {
       await flushPendingSync();
       render();
       showToast('Bağlantı sağlandı. Veriler eşitlendi.', 'success');
-    } catch (error) {
+    } catch {
       showToast('Bağlantı sağlandı ancak bekleyen veriler eşitlenemedi.', 'error');
     }
   });
@@ -125,7 +129,7 @@ function setup() {
   function stopScanner() {
     scannerLoopToken += 1;
     if (window.Quagga) {
-      try { window.Quagga.stop(); } catch (error) {}
+      try { window.Quagga.stop(); } catch {}
     }
     if (scannerVideo && scannerVideo.srcObject) {
       scannerVideo.srcObject.getTracks().forEach((track) => track.stop());
@@ -258,7 +262,7 @@ function setup() {
               });
               return;
             }
-          } catch (error) {}
+          } catch {}
           requestAnimationFrame(scanFrame);
         };
         scanFrame();
@@ -295,7 +299,7 @@ function setup() {
         });
         window.Quagga.start();
       });
-    } catch (error) {
+    } catch {
       showToast('Kamera erişimi yok.', 'error');
       stopScanner();
     }
@@ -334,7 +338,7 @@ function setup() {
       }
 
       await handleScannedIsbn(isbn, 'Yazılı ISBN');
-    } catch (error) {
+    } catch {
       showToast('Yazılı ISBN okunamadı.', 'error');
     } finally {
       readPrintedIsbn.disabled = false;
@@ -430,6 +434,10 @@ function setup() {
   document.getElementById('status-filter').addEventListener('change', render);
   document.getElementById('rating-filter').addEventListener('change', render);
   document.getElementById('shelf-filter').addEventListener('change', render);
+  document.getElementById('format-filter').addEventListener('change', render);
+  document.getElementById('tag-filter').addEventListener('input', render);
+  document.getElementById('year-from-filter').addEventListener('input', render);
+  document.getElementById('year-to-filter').addEventListener('input', render);
   progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
   readingStatus.addEventListener('change', () => {
     if (readingStatus.value === 'read') progress.value = 100;
