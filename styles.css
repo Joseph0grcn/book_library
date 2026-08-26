@@ -171,6 +171,37 @@ h1 {
   backdrop-filter: blur(8px);
 }
 
+.page-nav {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.page-link {
+  flex: 1;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.page-link:hover {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.page-link.active {
+  background: var(--primary);
+  color: white;
+}
+
+.page-hidden {
+  display: none !important;
+}
+
 .mode-switch {
   display: flex;
   gap: 8px;
@@ -725,6 +756,10 @@ button.danger:hover {
     border-radius: 18px;
     box-shadow: 0 12px 35px rgba(29, 70, 62, 0.18);
     backdrop-filter: blur(16px);
+  }
+
+  .page-nav {
+    display: none;
   }
 
   .mobile-view-hidden {

@@ -1007,31 +1007,40 @@ async function initializeApp() {
   const authForm = document.getElementById('auth-form');
   const registerButton = document.getElementById('auth-register');
   const controls = document.getElementById('library-controls');
+  const bookForm = document.getElementById('book-form');
+  const modeSwitch = document.querySelector('.mode-switch');
   const filters = document.querySelector('.filters');
   const stats = document.getElementById('dashboard-stats');
   const list = document.getElementById('list');
 
-  const setMobileView = (view) => {
-    controls.classList.toggle('mobile-view-hidden', view !== 'add');
-    filters.classList.toggle('mobile-view-hidden', view !== 'library');
-    stats.classList.toggle('mobile-view-hidden', view !== 'stats');
-    list.classList.toggle('mobile-view-hidden', view !== 'add' && view !== 'stats');
+  const setPage = (page) => {
+    controls.classList.toggle('page-hidden', page === 'stats');
+    modeSwitch.classList.toggle('page-hidden', page !== 'add');
+    bookForm.classList.toggle('page-hidden', page !== 'add');
+    filters.classList.toggle('page-hidden', page !== 'library');
+    stats.classList.toggle('page-hidden', page !== 'stats');
+    list.classList.toggle('page-hidden', page !== 'library');
+    document.querySelectorAll('[data-page]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.page === page);
+    });
+    if (page === 'add') document.getElementById('mode-isbn')?.click();
+    window.history.replaceState(null, '', page === 'library' ? window.location.pathname : `#${page}`);
   };
 
-  document.querySelectorAll('[data-tab-target]').forEach((tab) => {
+  document.querySelectorAll('[data-page]').forEach((tab) => {
     tab.addEventListener('click', () => {
-      const targetId = tab.dataset.tabTarget;
-      if (targetId === 'auth-logout') {
+      const targetPage = tab.dataset.page;
+      if (targetPage === 'logout') {
         supabaseClient?.auth.signOut();
         return;
       }
-      const view = targetId === 'library-controls' ? 'add' : targetId === 'dashboard-stats' ? 'stats' : 'library';
-      if (view === 'add') document.getElementById('mode-isbn')?.click();
-      setMobileView(view);
-      document.querySelectorAll('.mobile-tabbar .tab').forEach((item) => item.classList.toggle('active', item === tab));
-      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setPage(targetPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
+
+  const initialPage = window.location.hash.slice(1);
+  setPage(['add', 'stats'].includes(initialPage) ? initialPage : 'library');
 
   if (!supabaseClient) {
     authStatus.textContent = 'Supabase ayarları yapılmamış. supabase-config.js dosyasını doldurun.';

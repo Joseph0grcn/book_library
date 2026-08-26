@@ -48,6 +48,12 @@
       </div>
     </header>
 
+    <nav class="page-nav" aria-label="Sayfa gezinme">
+      <button type="button" class="page-link active" data-page="library">Kitaplığım</button>
+      <button type="button" class="page-link" data-page="add">Kitap ekle</button>
+      <button type="button" class="page-link" data-page="stats">İstatistik</button>
+    </nav>
+
     <section id="library-controls" class="controls">
       <div class="mode-switch">
         <button type="button" id="mode-manual" class="mode active">Manuel</button>
@@ -182,19 +188,19 @@
     <section id="list" class="list"></section>
 
     <nav class="mobile-tabbar" aria-label="Ana gezinme">
-      <button type="button" class="tab active" data-tab-target="list">
+      <button type="button" class="tab active" data-page="library">
         <span class="tab-icon" aria-hidden="true">⌂</span>
         <span>Kitaplığım</span>
       </button>
-      <button type="button" class="tab" data-tab-target="library-controls">
+      <button type="button" class="tab" data-page="add">
         <span class="tab-icon" aria-hidden="true">＋</span>
         <span>Kitap ekle</span>
       </button>
-      <button type="button" class="tab" data-tab-target="dashboard-stats">
+      <button type="button" class="tab" data-page="stats">
         <span class="tab-icon" aria-hidden="true">◔</span>
         <span>İstatistik</span>
       </button>
-      <button type="button" class="tab" data-tab-target="auth-logout">
+      <button type="button" class="tab" data-page="logout">
         <span class="tab-icon" aria-hidden="true">↪</span>
         <span>Çıkış</span>
       </button>
