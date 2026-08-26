@@ -13,16 +13,30 @@
     </header>
 
     <section class="controls">
+      <div class="mode-switch">
+        <button type="button" id="mode-manual" class="mode active">Manuel</button>
+        <button type="button" id="mode-isbn" class="mode secondary">ISBN / Barkod</button>
+      </div>
+
       <form id="book-form">
-        <input id="title" type="text" placeholder="Başlık" required />
-        <input id="author" type="text" placeholder="Yazar" />
-        <input id="year" type="number" placeholder="Yıl" min="0" />
-        <input id="tags" type="text" placeholder="Etiketler (virgülle ayrılmış)" />
+        <div id="manual-fields" class="entry-panel">
+          <input id="title" type="text" placeholder="Başlık" />
+          <input id="author" type="text" placeholder="Yazar" />
+          <input id="year" type="number" placeholder="Yıl" min="0" />
+          <input id="tags" type="text" placeholder="Etiketler (virgülle ayrılmış)" />
+        </div>
+
+        <div id="isbn-fields" class="entry-panel hidden">
+          <input id="isbn-input" type="text" placeholder="ISBN veya barkod girin" />
+          <button type="button" id="lookup-book" class="secondary">Bilgiyi Getir</button>
+          <button type="button" id="scan-camera" class="secondary">Kamera ile Tara</button>
+        </div>
+
         <label class="checkbox">
           <input id="read" type="checkbox" />
           <span>Okudum</span>
         </label>
-        <button type="submit">Ekle</button>
+        <button type="submit">Kitabı Kaydet</button>
       </form>
 
       <div class="filters">
@@ -32,13 +46,25 @@
           <option value="read">Okunanlar</option>
           <option value="unread">Okunmayanlar</option>
         </select>
-        <button id="export" class="secondary">Dışa Aktar</button>
+        <button id="export" class="secondary">JSON Dışa Aktar</button>
+        <button id="save-db" class="secondary">db.json Olarak Kaydet</button>
         <input id="import-file" type="file" accept="application/json" hidden />
         <button id="import" class="secondary">İçe Aktar</button>
         <button id="clear" class="danger">Tümünü Sil</button>
       </div>
     </section>
 
+    <div id="scanner-modal" class="scanner-modal hidden">
+      <div class="scanner-window">
+        <div class="scanner-header">
+          <strong>Barkod / ISBN tara</strong>
+          <button type="button" id="close-scanner" class="secondary small">Kapat</button>
+        </div>
+        <video id="scanner-video" autoplay playsinline muted></video>
+      </div>
+    </div>
+
+    <section id="status" class="status"></section>
     <section id="list" class="list"></section>
   </div>
 

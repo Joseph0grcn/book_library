@@ -1,13 +1,28 @@
 const STORAGE_KEY = 'book_library_books';
+const DB_FILE_NAME = 'db.json';
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function normalizeBook(rawBook) {
+  return {
+    id: rawBook.id || uid(),
+    title: rawBook.title || 'Başlıksız',
+    author: rawBook.author || '',
+    year: rawBook.year || '',
+    tags: Array.isArray(rawBook.tags) ? rawBook.tags : [],
+    read: !!rawBook.read,
+    isbn: rawBook.isbn || '',
+    createdAt: rawBook.createdAt || Date.now()
+  };
+}
+
 function loadBooks() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeBook) : [];
   } catch (error) {
     console.error('Veri okunurken hata oluştu:', error);
     return [];
@@ -18,16 +33,51 @@ function saveBooks(books) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
 }
 
-function createBook({ title, author, year, tags, read }) {
-  return {
+function createBook({ title, author, year, tags, read, isbn }) {
+  return normalizeBook({
     id: uid(),
     title: title || 'Başlıksız',
     author: author || '',
     year: year || '',
     tags: Array.isArray(tags) ? tags : [],
     read: !!read,
+    isbn: isbn || '',
     createdAt: Date.now()
-  };
+  });
+}
+
+function setStatus(message, isError = false) {
+  const status = document.getElementById('status');
+  if (!status) return;
+  status.textContent = message;
+  status.style.color = isError ? '#b91c1c' : '#475569';
+}
+
+async function fetchAllBooksFromServer() {
+  try {
+    const response = await fetch('/.netlify/functions/books');
+    if (!response.ok) throw new Error('Sunucudan veri alınamadı');
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(normalizeBook) : [];
+  } catch (error) {
+    return loadBooks();
+  }
+}
+
+async function syncBooksToServer(books) {
+  try {
+    const response = await fetch('/.netlify/functions/books', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(books)
+    });
+    if (!response.ok) throw new Error('Sunucu kaydı başarısız');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    saveBooks(books);
+    return { fallback: true };
+  }
 }
 
 function render() {
@@ -65,7 +115,8 @@ function render() {
 
     const detailsEl = document.createElement('div');
     detailsEl.className = 'muted';
-    detailsEl.textContent = [book.author || 'Yazar bilinmiyor', book.year || ''].filter(Boolean).join(' • ');
+    const detailParts = [book.author || 'Yazar bilinmiyor', book.year || '', book.isbn ? `ISBN: ${book.isbn}` : ''];
+    detailsEl.textContent = detailParts.filter(Boolean).join(' • ');
 
     const tagsEl = document.createElement('div');
     tagsEl.className = 'tags';
@@ -81,16 +132,17 @@ function render() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'small';
     toggleBtn.textContent = book.read ? 'Okundu' : 'Okunmadı';
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', async () => {
       const updatedBooks = loadBooks().map((item) => item.id === book.id ? { ...item, read: !item.read } : item);
       saveBooks(updatedBooks);
+      await syncBooksToServer(updatedBooks);
       render();
     });
 
     const editBtn = document.createElement('button');
     editBtn.className = 'small secondary';
     editBtn.textContent = 'Düzenle';
-    editBtn.addEventListener('click', () => {
+    editBtn.addEventListener('click', async () => {
       const nextTitle = prompt('Başlık', book.title);
       if (nextTitle === null) return;
 
@@ -115,16 +167,18 @@ function render() {
       });
 
       saveBooks(updatedBooks);
+      await syncBooksToServer(updatedBooks);
       render();
     });
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'small danger';
     deleteBtn.textContent = 'Sil';
-    deleteBtn.addEventListener('click', () => {
+    deleteBtn.addEventListener('click', async () => {
       if (!confirm('Bu kitabı silmek istediğinize emin misiniz?')) return;
       const updatedBooks = loadBooks().filter((item) => item.id !== book.id);
       saveBooks(updatedBooks);
+      await syncBooksToServer(updatedBooks);
       render();
     });
 
@@ -138,24 +192,155 @@ function render() {
   });
 }
 
+async function fetchBookMetadata(isbnInput) {
+  const cleaned = isbnInput.trim();
+  if (!cleaned) {
+    throw new Error('ISBN veya barkod girin.');
+  }
+
+  const isbn = cleaned.replace(/[^0-9Xx]/g, '');
+  if (!isbn) {
+    throw new Error('Geçerli bir ISBN / barkod bulunamadı.');
+  }
+
+  const url = `https://openlibrary.org/isbn/${isbn}.json`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Bu ISBN için kitap bilgisi bulunamadı.');
+  }
+
+  const data = await response.json();
+  const title = data.title || 'Başlıksız';
+  const authors = Array.isArray(data.authors) ? data.authors.map((a) => a.name || '').filter(Boolean).join(', ') : '';
+  const publishDate = data.publish_date || '';
+  const year = publishDate ? publishDate.split(' ')[0] || '' : '';
+
+  return {
+    title,
+    author: authors,
+    year,
+    isbn,
+    tags: ['isbn', 'otomatik']
+  };
+}
+
+function saveDbFile() {
+  const books = loadBooks();
+  const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = DB_FILE_NAME;
+  link.click();
+  URL.revokeObjectURL(url);
+  setStatus(`db.json hazır. Toplam ${books.length} kitap kaydedildi.`);
+}
+
 function setup() {
   const form = document.getElementById('book-form');
+  const manualFields = document.getElementById('manual-fields');
+  const isbnFields = document.getElementById('isbn-fields');
+  const modeManual = document.getElementById('mode-manual');
+  const modeIsbn = document.getElementById('mode-isbn');
+  const isbnInput = document.getElementById('isbn-input');
+  const scannerModal = document.getElementById('scanner-modal');
+  const closeScanner = document.getElementById('close-scanner');
+  const scannerVideo = document.getElementById('scanner-video');
 
-  form.addEventListener('submit', (event) => {
+  function setMode(mode) {
+    const isManual = mode === 'manual';
+    modeManual.classList.toggle('active', isManual);
+    modeManual.classList.toggle('secondary', !isManual);
+    modeIsbn.classList.toggle('active', !isManual);
+    modeIsbn.classList.toggle('secondary', isManual);
+    manualFields.classList.toggle('hidden', !isManual);
+    isbnFields.classList.toggle('hidden', isManual);
+  }
+
+  modeManual.addEventListener('click', () => setMode('manual'));
+  modeIsbn.addEventListener('click', () => setMode('isbn'));
+
+  document.getElementById('lookup-book').addEventListener('click', async () => {
+    try {
+      setStatus('ISBN bilgisi alınıyor...');
+      const result = await fetchBookMetadata(isbnInput.value);
+      document.getElementById('title').value = result.title;
+      document.getElementById('author').value = result.author;
+      document.getElementById('year').value = result.year;
+      document.getElementById('tags').value = result.tags.join(', ');
+      setStatus('Kitap bilgisi hazır. Kaydet butonuna basabilirsiniz.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+  async function openScanner() {
+    scannerModal.classList.remove('hidden');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      scannerVideo.srcObject = stream;
+      setStatus('Kamera açıldı. Barkodu tarayın.');
+    } catch (error) {
+      setStatus('Kamera erişimi yok. ISBN manuel olarak yazabilirsiniz.', true);
+    }
+  }
+
+  document.getElementById('scan-camera').addEventListener('click', openScanner);
+  closeScanner.addEventListener('click', () => {
+    scannerModal.classList.add('hidden');
+    if (scannerVideo.srcObject) {
+      scannerVideo.srcObject.getTracks().forEach((track) => track.stop());
+      scannerVideo.srcObject = null;
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const title = document.getElementById('title').value.trim();
-    const author = document.getElementById('author').value.trim();
-    const year = document.getElementById('year').value.trim();
-    const tags = document.getElementById('tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
-    const read = document.getElementById('read').checked;
+    const mode = document.querySelector('.mode.active')?.id === 'mode-isbn' ? 'isbn' : 'manual';
+    let title = document.getElementById('title').value.trim();
+    let author = document.getElementById('author').value.trim();
+    let year = document.getElementById('year').value.trim();
+    let tags = document.getElementById('tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
+    let isbn = '';
 
-    if (!title) return;
+    if (mode === 'isbn') {
+      try {
+        setStatus('ISBN üzerinden bilgi alınıyor...');
+        const result = await fetchBookMetadata(isbnInput.value);
+        title = result.title;
+        author = result.author;
+        year = result.year;
+        isbn = result.isbn;
+        tags = result.tags;
+        document.getElementById('title').value = title;
+        document.getElementById('author').value = author;
+        document.getElementById('year').value = year;
+        document.getElementById('tags').value = tags.join(', ');
+      } catch (error) {
+        setStatus(error.message, true);
+        return;
+      }
+    }
+
+    if (!title) {
+      setStatus('Başlık alanı zorunludur.', true);
+      return;
+    }
 
     const books = loadBooks();
-    books.unshift(createBook({ title, author, year, tags, read }));
+    books.unshift(createBook({
+      title,
+      author,
+      year,
+      tags,
+      read: document.getElementById('read').checked,
+      isbn
+    }));
     saveBooks(books);
+    await syncBooksToServer(books);
     form.reset();
+    setStatus('Kitap başarıyla kaydedildi.');
     render();
   });
 
@@ -171,7 +356,10 @@ function setup() {
     link.download = `kitaplar-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    setStatus(`JSON dışa aktarıldı. ${books.length} kitap bulundu.`);
   });
+
+  document.getElementById('save-db').addEventListener('click', saveDbFile);
 
   document.getElementById('import').addEventListener('click', () => {
     document.getElementById('import-file').click();
@@ -188,13 +376,17 @@ function setup() {
 
       const existing = loadBooks();
       const existingIds = new Set(existing.map((book) => book.id));
-      const newBooks = incoming.filter((book) => !existingIds.has(book.id || ''));
-      const merged = [...newBooks.map((book) => ({ ...book, id: book.id || uid(), tags: book.tags || [], read: !!book.read })), ...existing];
+      const newBooks = incoming
+        .map((book) => normalizeBook(book))
+        .filter((book) => !existingIds.has(book.id));
+
+      const merged = [...newBooks, ...existing];
       saveBooks(merged);
+      await syncBooksToServer(merged);
       render();
-      alert(`${newBooks.length} yeni kitap eklendi.`);
+      setStatus(`${newBooks.length} yeni kitap içe aktarıldı.`);
     } catch (error) {
-      alert('İçe aktarma sırasında hata oluştu: ' + error.message);
+      setStatus('İçe aktarma sırasında hata oluştu: ' + error.message, true);
     } finally {
       event.target.value = '';
     }
@@ -204,8 +396,10 @@ function setup() {
     if (!confirm('Tüm kitapları silmek istediğinize emin misiniz?')) return;
     localStorage.removeItem(STORAGE_KEY);
     render();
+    setStatus('Tüm kitap kayıtları silindi.');
   });
 
+  setMode('manual');
   render();
 }
 
