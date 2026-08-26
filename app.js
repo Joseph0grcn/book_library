@@ -117,7 +117,16 @@ function render() {
 
     const detailsEl = document.createElement('div');
     detailsEl.className = 'muted';
-    const detailParts = [book.author || 'Yazar bilinmiyor', book.year || '', book.isbn ? `ISBN: ${book.isbn}` : ''];
+    const metadata = book.metadata || {};
+    const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : '';
+    const pageCount = metadata.number_of_pages || '';
+    const detailParts = [
+      book.author || 'Yazar bilinmiyor',
+      book.year || '',
+      publisher,
+      pageCount ? `${pageCount} sayfa` : '',
+      book.isbn ? `ISBN: ${book.isbn}` : ''
+    ];
     detailsEl.textContent = detailParts.filter(Boolean).join(' • ');
 
     const tagsEl = document.createElement('div');
@@ -213,9 +222,28 @@ async function fetchBookMetadata(isbnInput) {
 
   const data = await response.json();
   const title = data.title || 'Başlıksız';
-  const authors = Array.isArray(data.authors) ? data.authors.map((a) => a.name || '').filter(Boolean).join(', ') : '';
+  const authorEntries = Array.isArray(data.authors) ? data.authors : [];
+  const authorNames = await Promise.all(authorEntries.map(async (author) => {
+    if (author.name) return author.name;
+    const authorKey = author.key || (author.author && author.author.key);
+    if (!authorKey) return '';
+
+    try {
+      const authorResponse = await fetch(`https://openlibrary.org${authorKey}.json`);
+      if (!authorResponse.ok) return '';
+      const authorData = await authorResponse.json();
+      return authorData.name || authorData.personal_name || '';
+    } catch (error) {
+      return '';
+    }
+  }));
+  const authors = authorNames.filter(Boolean).join(', ');
   const publishDate = data.publish_date || '';
   const year = publishDate ? publishDate.split(' ')[0] || '' : '';
+  const metadata = {
+    ...data,
+    resolved_authors: authorNames.filter(Boolean)
+  };
 
   return {
     title,
@@ -223,7 +251,7 @@ async function fetchBookMetadata(isbnInput) {
     year,
     isbn,
     tags: ['isbn', 'otomatik'],
-    metadata: data
+    metadata
   };
 }
 
