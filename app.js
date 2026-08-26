@@ -270,6 +270,9 @@ function setup() {
     scannerModal.classList.add('hidden');
   }
 
+  scannerModal.classList.add('hidden');
+  setMode('manual');
+
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
 
@@ -298,7 +301,12 @@ function setup() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
       });
 
       scannerVideo.srcObject = stream;
@@ -515,7 +523,6 @@ function setup() {
     setStatus('Tüm kitap kayıtları silindi.');
   });
 
-  setMode('manual');
   render();
 }
 
