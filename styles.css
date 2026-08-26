@@ -796,6 +796,40 @@ button.danger:hover {
   background: #000;
 }
 
+.quick-scan-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+
+.quick-scan-queue > strong {
+  color: var(--primary);
+}
+
+#quick-scan-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+#quick-scan-list span {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--soft);
+  font-size: 0.78rem;
+}
+
+.quick-scan-queue button {
+  width: 100%;
+}
+
 .scanner-actions {
   display: flex;
   gap: 10px;

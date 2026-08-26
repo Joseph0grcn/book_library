@@ -1,6 +1,6 @@
 import { supabaseClient, setActiveUser, getUserStorageKey } from './core/config.js';
 import { showToast } from './ui/toast.js';
-import { fetchBookMetadata, findDuplicateBook } from './features/isbn.js';
+import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
 import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
@@ -95,6 +95,7 @@ function setup() {
   const modeIsbn = document.getElementById('mode-isbn');
   const isbnInput = document.getElementById('isbn-input');
   const scannerModal = document.getElementById('scanner-modal');
+  const scannerTitle = document.getElementById('scanner-title');
   const closeScanner = document.getElementById('close-scanner');
   const scannerVideo = document.getElementById('scanner-video');
   const readPrintedIsbn = document.getElementById('read-printed-isbn');
@@ -105,8 +106,16 @@ function setup() {
   const progress = document.getElementById('progress');
   const progressValue = document.getElementById('progress-value');
   const shelf = document.getElementById('shelf');
+  const quickAddBooks = document.getElementById('quick-add-books');
+  const quickScanQueueEl = document.getElementById('quick-scan-queue');
+  const quickScanCount = document.getElementById('quick-scan-count');
+  const quickScanList = document.getElementById('quick-scan-list');
+  const completeQuickScan = document.getElementById('complete-quick-scan');
   let scannerLoopToken = 0;
   let pendingFetchedBook = null;
+  let quickScanMode = false;
+  let quickScanQueue = [];
+  let pendingQuickIsbns = [];
 
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
@@ -114,6 +123,52 @@ function setup() {
   function setScannerVisible(isVisible) {
     scannerModal.classList.toggle('hidden', !isVisible);
     scannerModal.style.display = isVisible ? 'flex' : 'none';
+  }
+
+  function renderQuickScanQueue() {
+    quickScanCount.textContent = String(quickScanQueue.length);
+    quickScanList.innerHTML = quickScanQueue.length
+      ? quickScanQueue.map((isbn) => `<span>${escapeHtml(isbn)}</span>`).join('')
+      : '<span class="muted">Henüz ISBN okutulmadı.</span>';
+  }
+
+  function addQuickScannedIsbn(cleaned, source) {
+    let isbn;
+    try {
+      isbn = normalizeIsbn(cleaned);
+    } catch {
+      return;
+    }
+
+    const isbnVariants = getIsbnVariants(isbn);
+    const isDuplicate = quickScanQueue.some((queued) => {
+      return [...getIsbnVariants(queued)].some((variant) => isbnVariants.has(variant));
+    });
+    if (isDuplicate) {
+      return;
+    }
+
+    quickScanQueue.push(isbn);
+    renderQuickScanQueue();
+    showToast(`${source} listeye eklendi.`, 'success');
+  }
+
+  async function processNextQuickBook() {
+    const isbn = pendingQuickIsbns.shift();
+    if (!isbn) {
+      setMode('isbn');
+      showToast('Hızlı kitap ekleme tamamlandı.', 'success');
+      return;
+    }
+
+    try {
+      showToast(`Sıradaki kitap getiriliyor... (${pendingQuickIsbns.length + 1} kaldı)`, 'info');
+      const book = await fetchBookMetadata(isbn);
+      if (!prepareFetchedBook(book, 'Hızlı tarama')) await processNextQuickBook();
+    } catch {
+      showToast(`${isbn} için kitap bilgisi alınamadı. Sıradaki kitaba geçiliyor.`, 'error');
+      await processNextQuickBook();
+    }
   }
 
   function setMode(mode) {
@@ -213,6 +268,10 @@ function setup() {
 
   async function handleScannedIsbn(cleaned, source) {
     isbnInput.value = cleaned;
+    if (quickScanMode) {
+      addQuickScannedIsbn(cleaned, source);
+      return;
+    }
     showToast(`${source} algılandı. Bilgi getiriliyor...`, 'info');
     stopScanner();
     const book = await fetchBookMetadata(cleaned);
@@ -221,6 +280,9 @@ function setup() {
 
   async function openScanner() {
     setMode('isbn');
+    scannerTitle.textContent = quickScanMode ? 'Hızlı kitap ekleme' : 'Barkod / ISBN tara';
+    quickScanQueueEl.classList.toggle('hidden', !quickScanMode);
+    if (quickScanMode) renderQuickScanQueue();
     setScannerVisible(true);
     showToast('Kamera açılıyor...', 'info');
 
@@ -347,10 +409,41 @@ function setup() {
     if (!scanBarcode.checked && !scanPrintedIsbn.checked) scanBarcode.checked = true;
   });
 
-  document.getElementById('scan-camera').addEventListener('click', openScanner);
-  closeScanner.addEventListener('click', stopScanner);
+  document.getElementById('scan-camera').addEventListener('click', () => {
+    quickScanMode = false;
+    quickScanQueue = [];
+    openScanner();
+  });
+  quickAddBooks.addEventListener('click', () => {
+    quickScanMode = true;
+    quickScanQueue = [];
+    pendingQuickIsbns = [];
+    openScanner();
+  });
+  completeQuickScan.addEventListener('click', () => {
+    if (!quickScanQueue.length) {
+      showToast('Önce en az bir geçerli ISBN okutun.', 'error');
+      return;
+    }
+    pendingQuickIsbns = [...quickScanQueue];
+    quickScanMode = false;
+    quickScanQueue = [];
+    stopScanner();
+    processNextQuickBook();
+  });
+  closeScanner.addEventListener('click', () => {
+    quickScanMode = false;
+    quickScanQueue = [];
+    pendingQuickIsbns = [];
+    stopScanner();
+  });
   scannerModal.addEventListener('click', (event) => {
-    if (event.target === scannerModal) stopScanner();
+    if (event.target === scannerModal) {
+      quickScanMode = false;
+      quickScanQueue = [];
+      pendingQuickIsbns = [];
+      stopScanner();
+    }
   });
 
   // Main Book Form Submit
@@ -421,7 +514,12 @@ function setup() {
     setupStarRating('form-rating-widget', 0);
     progressValue.value = '0%';
     setMode('isbn');
-    showToast('Kitap başarıyla kaydedildi.', 'success');
+    if (pendingQuickIsbns.length) {
+      showToast('Kitap kaydedildi. Sıradaki kitap hazırlanıyor.', 'success');
+      setTimeout(() => processNextQuickBook(), 0);
+    } else {
+      showToast('Kitap başarıyla kaydedildi.', 'success');
+    }
     render();
   });
 

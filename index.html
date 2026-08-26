@@ -78,6 +78,7 @@
             <span>Kitap bilgileri geldikten sonra kaydetmeden önce düzenleyebilirsiniz.</span>
           </div>
           <button type="button" id="scan-camera" class="scan-action">Kamera ile Tara</button>
+          <button type="button" id="quick-add-books" class="secondary quick-add-button">Hızlı kitap ekle</button>
           <div class="isbn-manual-lookup">
             <input id="isbn-input" type="text" placeholder="veya ISBN / barkodu elle girin" aria-label="ISBN veya barkod" />
             <button type="button" id="lookup-book" class="secondary">Bilgileri Getir</button>
@@ -245,7 +246,7 @@
     <div id="scanner-modal" class="scanner-modal hidden">
       <div class="scanner-window">
         <div class="scanner-header">
-          <strong>Barkod / ISBN tara</strong>
+          <strong id="scanner-title">Barkod / ISBN tara</strong>
           <button type="button" id="close-scanner" class="secondary small">Kapat</button>
         </div>
         <div class="scanner-modes">
@@ -259,6 +260,11 @@
           </label>
         </div>
         <video id="scanner-video" autoplay playsinline muted></video>
+        <div id="quick-scan-queue" class="quick-scan-queue hidden" aria-live="polite">
+          <strong><span id="quick-scan-count">0</span> ISBN sırada</strong>
+          <div id="quick-scan-list"></div>
+          <button type="button" id="complete-quick-scan">İşlemi tamamla</button>
+        </div>
         <div class="scanner-actions">
           <button type="button" id="read-printed-isbn" class="secondary">Seçili yöntemi çalıştır</button>
         </div>

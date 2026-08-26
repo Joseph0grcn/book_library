@@ -32,6 +32,13 @@ Bir kitap şu alanları kullanır: `id`, `title`, `author`, `year`, `tags`, `rea
 
 `status` yalnızca `unread`, `reading` veya `read` olmalıdır. `progress` 0-100, `rating` 0-5 aralığındadır. Dışarıdan gelen ve eski kayıtlar her zaman `normalizeBook()` üzerinden geçirilmelidir. `metadata` sağlayıcıya göre değişir; Google Books alanları camelCase, Open Library alanları çoğunlukla snake_case kullanır.
 
+## ISBN ekleme akışları
+
+- Normal `Kamera ile Tara` ilk geçerli barkodu okuyunca kamerayı kapatır, bilgileri forma getirir ve kullanıcının düzenleyip kaydetmesini bekler.
+- `Hızlı kitap ekle` kamera oturumunu açık tutar. Geçerli ISBN-10/ISBN-13 değerleri `quickScanQueue` içinde tekilleştirilerek gösterilir.
+- `İşlemi tamamla` kuyruğu sırayla işler. Her kitap için bilgiler forma doldurulur; kullanıcı `Kitabı Kaydet` ile kaydetmeden sonraki ISBN'e geçilmez.
+- Kuyruktaki ISBN mevcut kitapla yineleniyorsa veya metadata bulunamazsa kullanıcı bilgilendirilir ve sonraki ISBN'e geçilir.
+
 ## Senkronizasyon kuralları
 
 Normal kayıt, düzenleme ve durum değişikliği Supabase'e upsert yapar; uzak kitapları silmez. Silme ve "Tümünü Sil" işlemleri özellikle `{ allowDelete: true }` seçeneğini vermelidir. Ağ yokken son kitap listesi kullanıcıya gösterilir ve bekleyen senkron localStorage'da tutulur.

@@ -4,6 +4,8 @@ Kitap Kütüphanem, kişisel kitap koleksiyonunu takip etmek için hazırlanmı�
 
 ## Özellikler
 
+- Hızlı kitap ekleme: kamerayla art arda ISBN toplama ve sırayla formdan kaydetme
+
 - Manuel kitap ekleme
 - ISBN / barkod ile otomatik kitap bilgisi çekme
 - Google Books ve Open Library Search fallback ile ISBN araması
