@@ -258,6 +258,21 @@
       </div>
     </div>
 
+    <!-- AUTH FAILURE POPUP MODAL -->
+    <div id="auth-error-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="auth-error-title">
+      <div class="lookup-error-window">
+        <div class="scanner-header" style="background: #fff1f1;">
+          <strong id="auth-error-title" style="color: #b91c1c;">⚠️ Giriş Başarısız</strong>
+          <button type="button" id="close-auth-error" class="secondary small">Kapat</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <p id="auth-error-message" style="font-weight: 600; color: #b91c1c; margin-top: 0; margin-bottom: 12px;"></p>
+          <div id="auth-error-suggestion" class="lookup-error-isbn" style="font-size: 0.88rem; line-height: 1.5;"></div>
+        </div>
+      </div>
+    </div>
+
+
     <div id="cover-modal" class="cover-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cover-modal-title">
       <div class="cover-lightbox">
         <div class="scanner-header">

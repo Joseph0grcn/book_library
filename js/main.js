@@ -52,6 +52,33 @@ function showLookupError(isbn, message) {
   modal.classList.remove('hidden');
 }
 
+export function showAuthErrorModal(errorMessage) {
+  const modal = document.getElementById('auth-error-modal');
+  const messageEl = document.getElementById('auth-error-message');
+  const suggestionEl = document.getElementById('auth-error-suggestion');
+  if (!modal || !messageEl || !suggestionEl) return;
+
+  const msg = String(errorMessage || 'Bilinmeyen bir oturum hatası oluştu.');
+  messageEl.textContent = msg;
+
+  let suggestion = '💡 <strong>Çözüm Önerisi:</strong><br/>';
+
+  const lowerMsg = msg.toLowerCase();
+  if (lowerMsg.includes('invalid login credentials')) {
+    suggestion += 'Girdiğiniz e-posta veya şifre eşleşmiyor.<br/>• Henüz bu e-posta adresiyle kayıt olmadıysanız <strong>"Hesap oluştur"</strong> butonuna basabilirsiniz.<br/>• Şifrenizi doğru girdiğinizden emin olun.';
+  } else if (lowerMsg.includes('email not confirmed')) {
+    suggestion += 'E-posta adresiniz henüz doğrulanmamış.<br/>• Gelen kutunuzdaki onay bağlantısına tıklayın.<br/>• Veya Supabase panelinde (Auth ➔ Email) <strong>Confirm Email</strong> seçeneğini kapatın.';
+  } else if (lowerMsg.includes('api key') || lowerMsg.includes('jwt') || lowerMsg.includes('secret api key')) {
+    suggestion += 'Supabase API Anahtarı geçersiz.<br/>• <strong>supabase-config.js</strong> dosyasındaki <code>window.SUPABASE_ANON_KEY</code> değerini kontrol edin.';
+  } else {
+    suggestion += 'İnternet bağlantınızı ve giriş bilgilerinizi kontrol edip tekrar deneyiniz.';
+  }
+
+  suggestionEl.innerHTML = suggestion;
+  modal.classList.remove('hidden');
+}
+
+
 function setup() {
   const form = document.getElementById('book-form');
   const manualFields = document.getElementById('manual-fields');
@@ -627,6 +654,7 @@ async function initializeApp() {
         authStatus.textContent = 'Giriş Hatası: ' + error.message;
         authStatus.style.color = 'var(--danger)';
         showToast('Giriş Yapılamadı: ' + error.message, 'error');
+        showAuthErrorModal(error.message);
       } else {
         authStatus.textContent = '';
         showToast('Başarıyla giriş yapıldı.', 'success');
@@ -638,6 +666,7 @@ async function initializeApp() {
       authStatus.textContent = 'Giriş Hatası: ' + err.message;
       authStatus.style.color = 'var(--danger)';
       showToast('Giriş Yapılamadı: ' + err.message, 'error');
+      showAuthErrorModal(err.message);
     }
   });
 
@@ -657,6 +686,7 @@ async function initializeApp() {
         authStatus.textContent = 'Kayıt Hatası: ' + error.message;
         authStatus.style.color = 'var(--danger)';
         showToast('Kayıt Başarısız: ' + error.message, 'error');
+        showAuthErrorModal(error.message);
       } else {
         const msg = data.session ? 'Hesabınız oluşturuldu ve giriş yapıldı.' : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
         authStatus.textContent = msg;
@@ -670,7 +700,16 @@ async function initializeApp() {
       authStatus.textContent = 'Kayıt Hatası: ' + err.message;
       authStatus.style.color = 'var(--danger)';
       showToast('Kayıt Başarısız: ' + err.message, 'error');
+      showAuthErrorModal(err.message);
     }
+  });
+
+  const authErrorModal = document.getElementById('auth-error-modal');
+  document.getElementById('close-auth-error')?.addEventListener('click', () => {
+    authErrorModal?.classList.add('hidden');
+  });
+  authErrorModal?.addEventListener('click', (event) => {
+    if (event.target === authErrorModal) authErrorModal.classList.add('hidden');
   });
 
   if (guestBtn) {
@@ -687,6 +726,7 @@ async function initializeApp() {
     authGate.style.display = 'flex';
     showToast('Çıkış yapıldı.', 'info');
   });
+
 
   // 2. Check Existing Supabase Session Safely
   if (supabaseClient) {
