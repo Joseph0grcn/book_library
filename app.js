@@ -268,6 +268,7 @@ function setup() {
       scannerVideo.srcObject = null;
     }
     scannerModal.classList.add('hidden');
+    setStatus('');
   }
 
   scannerModal.classList.add('hidden');
@@ -416,6 +417,11 @@ function setup() {
   document.getElementById('scan-camera').addEventListener('click', openScanner);
   closeScanner.addEventListener('click', () => {
     stopScanner();
+  });
+  scannerModal.addEventListener('click', (event) => {
+    if (event.target === scannerModal) {
+      stopScanner();
+    }
   });
 
   form.addEventListener('submit', async (event) => {
