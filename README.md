@@ -72,6 +72,7 @@ Service worker uygulama kabuğunu önbelleğe alır. Kitap verileri ve Supabase 
 
 ## Önemli Dosyalar
 
+- `docs/AI_CONTEXT.md` (projeye katkı verecek yapay zekâlar için başlangıç rehberi)
 - `index.html`
 - `styles.css`
 - `js/main.js`

@@ -37,9 +37,13 @@ function setupPwaUi() {
 
   window.addEventListener('online', updateConnectionStatus);
   window.addEventListener('online', async () => {
-    await flushPendingSync();
-    render();
-    showToast('Bağlantı sağlandı. Veriler eşitlendi.', 'success');
+    try {
+      await flushPendingSync();
+      render();
+      showToast('Bağlantı sağlandı. Veriler eşitlendi.', 'success');
+    } catch (error) {
+      showToast('Bağlantı sağlandı ancak bekleyen veriler eşitlenemedi.', 'error');
+    }
   });
   window.addEventListener('offline', updateConnectionStatus);
   updateConnectionStatus();

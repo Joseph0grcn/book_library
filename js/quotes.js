@@ -104,9 +104,14 @@ export function renderQuotes() {
 
   // Event listeners for kopyala & sil
   container.querySelectorAll('.copy-quote-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      navigator.clipboard.writeText(btn.dataset.text);
-      showToast('Alıntı panoya kopyalandı.', 'success');
+    btn.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API kullanılamıyor');
+        await navigator.clipboard.writeText(btn.dataset.text);
+        showToast('Alıntı panoya kopyalandı.', 'success');
+      } catch (error) {
+        showToast('Alıntı panoya kopyalanamadı.', 'error');
+      }
     });
   });
 

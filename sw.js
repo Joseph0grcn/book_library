@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kitap-kutuphanem-v3';
+const CACHE_NAME = 'kitap-kutuphanem-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -45,4 +45,8 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });

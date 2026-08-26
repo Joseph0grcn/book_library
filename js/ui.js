@@ -330,7 +330,7 @@ export function showBookDetail(book) {
   const content = document.getElementById('book-detail-content');
   const metadata = book.metadata || {};
   const coverUrl = getBookCoverUrl(book);
-  const description = typeof metadata.description === 'object' ? metadata.description.value : metadata.description;
+  const description = metadata.description ? formatMetadataValue(metadata.description) : '';
   const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : (metadata.publisher || '');
   const pageCount = metadata.number_of_pages || metadata.pageCount || '';
   const subjects = Array.isArray(metadata.subjects) ? metadata.subjects.join(', ') : '';
@@ -377,7 +377,7 @@ export function showBookDetail(book) {
     ['Sayfa sayısı', pageCount],
     ['Format', metadata.physical_format],
     ['Konular', subjects]
-  ].filter((field) => field[1]);
+  ].filter((field) => field[1] !== undefined && field[1] !== null && field[1] !== '');
   const details = document.createElement('dl');
   fields.forEach(([label, value]) => {
     const term = document.createElement('dt');
@@ -448,7 +448,7 @@ export function getBookCoverUrl(book) {
     metadata.imageLinks.medium,
     metadata.imageLinks.thumbnail,
     metadata.imageLinks.smallThumbnail
-  ].filter(Boolean).map((url) => url.replace(/^http:/, 'https:'));
+  ].filter(Boolean).map((url) => String(url).replace(/^http:/, 'https:'));
 
   if (metadata.source_api === 'Google Books' && googleCoverUrls && googleCoverUrls.length) {
     return googleCoverUrls[0];

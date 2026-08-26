@@ -91,12 +91,15 @@ export async function fetchGoogleBooksMetadata(isbn) {
 
   const data = item.volumeInfo || {};
   const identifiers = Array.isArray(data.industryIdentifiers) ? data.industryIdentifiers : [];
-  const matchedIsbn = identifiers.find((identifier) => identifier.identifier.replace(/[^0-9Xx]/g, '') === isbn);
+  const matchedIsbn = identifiers.find((identifier) => {
+    const identifierValue = identifier && identifier.identifier;
+    return identifierValue && String(identifierValue).replace(/[^0-9Xx]/g, '') === isbn;
+  });
   return {
     title: data.title || 'Başlıksız',
     author: Array.isArray(data.authors) ? data.authors.join(', ') : '',
     year: data.publishedDate ? data.publishedDate.slice(0, 4) : '',
-    isbn: matchedIsbn ? matchedIsbn.identifier : isbn,
+    isbn: matchedIsbn ? String(matchedIsbn.identifier) : isbn,
     tags: ['isbn', 'google-books', ...(Array.isArray(data.categories) ? data.categories : [])],
     metadata: { ...data, google_volume_id: item.id, source_api: 'Google Books', lookup_isbn: isbn, lookup_at: new Date().toISOString() }
   };

@@ -1,26 +1,49 @@
 import { STORAGE_KEY, PENDING_SYNC_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
 import { showToast } from './toast.js';
 
-export function normalizeBook(rawBook) {
+export function normalizeBook(rawBook = {}) {
+  const status = ['unread', 'reading', 'read'].includes(rawBook.status)
+    ? rawBook.status
+    : (rawBook.read ? 'read' : 'unread');
+  const progress = clampNumber(rawBook.progress, rawBook.read ? 100 : 0, 0, 100);
+  const rating = clampNumber(rawBook.rating, 0, 0, 5);
+
   return {
     id: rawBook.id || uid(),
     title: rawBook.title || 'Başlıksız',
     author: rawBook.author || '',
     year: rawBook.year || '',
-    tags: Array.isArray(rawBook.tags) ? rawBook.tags : [],
-    read: !!rawBook.read,
-    status: rawBook.status || (rawBook.read ? 'read' : 'unread'),
-    progress: Number.isFinite(Number(rawBook.progress)) ? Number(rawBook.progress) : (rawBook.read ? 100 : 0),
-    rating: Number.isFinite(Number(rawBook.rating)) ? Number(rawBook.rating) : 0,
+    tags: normalizeTags(rawBook.tags),
+    read: status === 'read',
+    status,
+    progress: status === 'read' ? 100 : progress,
+    rating,
     review: rawBook.review || '',
     notes: rawBook.notes || '',
     shelf: rawBook.shelf || 'owned',
     startDate: rawBook.startDate || rawBook.start_date || '',
     finishDate: rawBook.finishDate || rawBook.finish_date || '',
     isbn: rawBook.isbn || '',
-    metadata: rawBook.metadata && typeof rawBook.metadata === 'object' ? rawBook.metadata : {},
-    createdAt: rawBook.createdAt || Date.now()
+    metadata: rawBook.metadata && typeof rawBook.metadata === 'object' && !Array.isArray(rawBook.metadata) ? rawBook.metadata : {},
+    createdAt: validTimestamp(rawBook.createdAt) || Date.now()
   };
+}
+
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) return tags.map((tag) => String(tag).trim()).filter(Boolean);
+  if (typeof tags === 'string') return tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  return [];
+}
+
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function validTimestamp(value) {
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
 }
 
 export function loadBooks() {
@@ -44,11 +67,11 @@ export function createBook(bookData) {
     title: bookData.title || 'Başlıksız',
     author: bookData.author || '',
     year: bookData.year || '',
-    tags: Array.isArray(bookData.tags) ? bookData.tags : [],
+    tags: normalizeTags(bookData.tags),
     read: !!bookData.read,
     status: bookData.status || (bookData.read ? 'read' : 'unread'),
-    progress: bookData.progress || 0,
-    rating: bookData.rating || 0,
+    progress: bookData.progress ?? 0,
+    rating: bookData.rating ?? 0,
     review: bookData.review || '',
     notes: bookData.notes || '',
     shelf: bookData.shelf || 'owned',
@@ -56,7 +79,7 @@ export function createBook(bookData) {
     finishDate: bookData.finishDate || '',
     isbn: bookData.isbn || '',
     metadata: bookData.metadata || {},
-    createdAt: Date.now()
+    createdAt: bookData.createdAt || Date.now()
   });
 }
 
@@ -120,7 +143,7 @@ export async function syncBooksToServer(books, options = {}) {
       finish_date: book.finishDate || '',
       isbn: book.isbn,
       metadata: book.metadata,
-      created_at: new Date(book.createdAt).toISOString()
+      created_at: new Date(validTimestamp(book.createdAt) || Date.now()).toISOString()
     }));
     let data = [];
     if (rows.length) {
