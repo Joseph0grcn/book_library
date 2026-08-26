@@ -585,24 +585,21 @@ async function initializeApp() {
     actionsMenuToggle.setAttribute('aria-expanded', 'false');
   });
 
-  if (!supabaseClient) {
-    authStatus.textContent = 'Supabase ayarları yapılmamış. supabase-config.js dosyasını doldurun.';
-    return;
-  }
+  const guestBtn = document.getElementById('auth-guest');
 
-  const showApp = async (session) => {
-    setActiveUser(session.user);
+  const showApp = async (session = null) => {
+    setActiveUser(session ? session.user : null);
     authGate.style.display = 'none';
     app.style.display = 'block';
 
-    await flushPendingSync();
-    const books = await fetchAllBooksFromServer();
-    saveBooks(books);
-
-    // Setup Supabase Realtime for Multi-device Live Sync!
-    setupRealtimeSubscription(() => {
-      render();
-    });
+    if (session) {
+      await flushPendingSync();
+      const books = await fetchAllBooksFromServer();
+      saveBooks(books);
+      setupRealtimeSubscription(() => {
+        render();
+      });
+    }
 
     if (!appInitialized) {
       setup();
@@ -612,62 +609,108 @@ async function initializeApp() {
     }
   };
 
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) await showApp(session);
-
-  supabaseClient.auth.onAuthStateChange(async (_event, nextSession) => {
-    if (nextSession) {
-      await showApp(nextSession);
-    } else {
-      setActiveUser(null);
-      app.style.display = 'none';
-      authGate.style.display = 'flex';
-    }
-  });
-
+  // 1. Attach Form Event Listeners IMMEDIATELY so clicks are never blocked
   authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (!supabaseClient) {
+      showToast('Supabase ayarları tanımlanmamış. Yerel modda girebilirsiniz.', 'error');
+      return;
+    }
     authStatus.textContent = 'Giriş yapılıyor...';
     authStatus.style.color = 'var(--muted)';
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email: document.getElementById('auth-email').value.trim(),
-      password: document.getElementById('auth-password').value
-    });
-    if (error) {
-      authStatus.textContent = 'Giriş Hatası: ' + error.message;
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: document.getElementById('auth-email').value.trim(),
+        password: document.getElementById('auth-password').value
+      });
+      if (error) {
+        authStatus.textContent = 'Giriş Hatası: ' + error.message;
+        authStatus.style.color = 'var(--danger)';
+        showToast('Giriş Yapılamadı: ' + error.message, 'error');
+      } else {
+        authStatus.textContent = '';
+        showToast('Başarıyla giriş yapıldı.', 'success');
+        if (data && data.session) {
+          await showApp(data.session);
+        }
+      }
+    } catch (err) {
+      authStatus.textContent = 'Giriş Hatası: ' + err.message;
       authStatus.style.color = 'var(--danger)';
-      showToast('Giriş Yapılamadı: ' + error.message, 'error');
-    } else {
-      authStatus.textContent = '';
-      showToast('Başarıyla giriş yapıldı.', 'success');
+      showToast('Giriş Yapılamadı: ' + err.message, 'error');
     }
   });
 
   registerButton.addEventListener('click', async () => {
+    if (!supabaseClient) {
+      showToast('Supabase ayarları tanımlanmamış.', 'error');
+      return;
+    }
     authStatus.textContent = 'Hesap oluşturuluyor...';
     authStatus.style.color = 'var(--muted)';
-    const { data, error } = await supabaseClient.auth.signUp({
-      email: document.getElementById('auth-email').value.trim(),
-      password: document.getElementById('auth-password').value
-    });
-    if (error) {
-      authStatus.textContent = 'Kayıt Hatası: ' + error.message;
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: document.getElementById('auth-email').value.trim(),
+        password: document.getElementById('auth-password').value
+      });
+      if (error) {
+        authStatus.textContent = 'Kayıt Hatası: ' + error.message;
+        authStatus.style.color = 'var(--danger)';
+        showToast('Kayıt Başarısız: ' + error.message, 'error');
+      } else {
+        const msg = data.session ? 'Hesabınız oluşturuldu ve giriş yapıldı.' : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
+        authStatus.textContent = msg;
+        authStatus.style.color = 'var(--primary)';
+        showToast(msg, 'info');
+        if (data.session) {
+          await showApp(data.session);
+        }
+      }
+    } catch (err) {
+      authStatus.textContent = 'Kayıt Hatası: ' + err.message;
       authStatus.style.color = 'var(--danger)';
-      showToast('Kayıt Başarısız: ' + error.message, 'error');
-    } else {
-      const msg = data.session ? 'Hesabınız oluşturuldu ve giriş yapıldı.' : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
-      authStatus.textContent = msg;
-      authStatus.style.color = 'var(--primary)';
-      showToast(msg, 'info');
+      showToast('Kayıt Başarısız: ' + err.message, 'error');
     }
   });
 
+  if (guestBtn) {
+    guestBtn.addEventListener('click', () => {
+      showToast('Yerel (çevrimdışı) modda giriş yapıldı.', 'info');
+      showApp(null);
+    });
+  }
 
-  document.getElementById('auth-logout').addEventListener('click', () => {
-    supabaseClient.auth.signOut();
+  document.getElementById('auth-logout')?.addEventListener('click', () => {
+    supabaseClient?.auth.signOut();
+    setActiveUser(null);
+    app.style.display = 'none';
+    authGate.style.display = 'flex';
     showToast('Çıkış yapıldı.', 'info');
   });
+
+  // 2. Check Existing Supabase Session Safely
+  if (supabaseClient) {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) await showApp(session);
+
+      supabaseClient.auth.onAuthStateChange(async (_event, nextSession) => {
+        if (nextSession) {
+          await showApp(nextSession);
+        } else {
+          setActiveUser(null);
+          app.style.display = 'none';
+          authGate.style.display = 'flex';
+        }
+      });
+    } catch (sessionErr) {
+      console.warn('Supabase session check error:', sessionErr);
+    }
+  } else {
+    authStatus.textContent = 'Supabase istemcisi bağlanamadı. Dilerseniz Yerel Modda kullanabilirsiniz.';
+  }
 }
+
 
 function escapeHtml(str) {
   if (!str) return '';
