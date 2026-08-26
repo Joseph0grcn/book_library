@@ -512,7 +512,7 @@ function setup() {
     }
     books.unshift(createBook({
       ...book,
-      read: document.getElementById('read').checked,
+      read: readingStatus.value === 'read',
       status: readingStatus.value,
       progress: Number(progress.value),
       rating: Number(document.getElementById('rating').value),
@@ -760,7 +760,7 @@ function setup() {
       author,
       year,
       tags,
-      read: document.getElementById('read').checked,
+      read: readingStatus.value === 'read',
       status: readingStatus.value,
       progress: Number(progress.value),
       rating: Number(document.getElementById('rating').value),
@@ -782,7 +782,6 @@ function setup() {
   document.getElementById('rating-filter').addEventListener('change', render);
   progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
   readingStatus.addEventListener('change', () => {
-    document.getElementById('read').checked = readingStatus.value === 'read';
     if (readingStatus.value === 'read') progress.value = 100;
     progressValue.value = `${progress.value}%`;
   });
