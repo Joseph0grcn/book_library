@@ -426,56 +426,61 @@ function hideBookDetail() {
   document.getElementById('book-detail').classList.add('hidden');
 }
 
+async function fetchGoogleBooksMetadata(isbn) {
+  const apiKey = window.GOOGLE_BOOKS_API_KEY && !window.GOOGLE_BOOKS_API_KEY.includes('YOUR_')
+    ? `&key=${encodeURIComponent(window.GOOGLE_BOOKS_API_KEY)}`
+    : '';
+  const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=10${apiKey}`);
+  if (!response.ok) return null;
+  const result = await response.json();
+  const item = Array.isArray(result.items) ? result.items[0] : null;
+  if (!item) return null;
+
+  const data = item.volumeInfo || {};
+  const identifiers = Array.isArray(data.industryIdentifiers) ? data.industryIdentifiers : [];
+  const matchedIsbn = identifiers.find((identifier) => identifier.identifier.replace(/[^0-9Xx]/g, '') === isbn);
+  return {
+    title: data.title || 'Başlıksız',
+    author: Array.isArray(data.authors) ? data.authors.join(', ') : '',
+    year: data.publishedDate ? data.publishedDate.slice(0, 4) : '',
+    isbn: matchedIsbn ? matchedIsbn.identifier : isbn,
+    tags: ['isbn', 'google-books', ...(Array.isArray(data.categories) ? data.categories : [])],
+    metadata: { ...data, google_volume_id: item.id, source_api: 'Google Books', lookup_isbn: isbn, lookup_at: new Date().toISOString() }
+  };
+}
+
+async function fetchOpenLibraryMetadata(isbn) {
+  const response = await fetch(`https://openlibrary.org/search.json?isbn=${encodeURIComponent(isbn)}&fields=*&limit=1`);
+  if (!response.ok) return null;
+  const result = await response.json();
+  const data = Array.isArray(result.docs) ? result.docs[0] : null;
+  if (!data) return null;
+
+  const authors = Array.isArray(data.author_name) ? data.author_name.join(', ') : '';
+  return {
+    title: data.title || 'Başlıksız',
+    author: authors,
+    year: data.first_publish_year ? String(data.first_publish_year) : '',
+    isbn,
+    tags: ['isbn', 'open-library', ...(Array.isArray(data.subject) ? data.subject.slice(0, 8) : [])],
+    metadata: { ...data, source_api: 'Open Library Search', lookup_isbn: isbn, lookup_at: new Date().toISOString() }
+  };
+}
+
 async function fetchBookMetadata(isbnInput) {
   const cleaned = isbnInput.trim();
-  if (!cleaned) {
-    throw new Error('ISBN veya barkod girin.');
-  }
+  if (!cleaned) throw new Error('ISBN veya barkod girin.');
 
   const isbn = cleaned.replace(/[^0-9Xx]/g, '');
-  if (!isbn) {
-    throw new Error('Geçerli bir ISBN / barkod bulunamadı.');
-  }
+  if (!isbn) throw new Error('Geçerli bir ISBN / barkod bulunamadı.');
 
-  const url = `https://openlibrary.org/isbn/${isbn}.json`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Bu ISBN için kitap bilgisi bulunamadı.');
-  }
+  const googleBook = await fetchGoogleBooksMetadata(isbn);
+  if (googleBook) return googleBook;
 
-  const data = await response.json();
-  const title = data.title || 'Başlıksız';
-  const authorEntries = Array.isArray(data.authors) ? data.authors : [];
-  const authorNames = await Promise.all(authorEntries.map(async (author) => {
-    if (author.name) return author.name;
-    const authorKey = author.key || (author.author && author.author.key);
-    if (!authorKey) return '';
+  const openLibraryBook = await fetchOpenLibraryMetadata(isbn);
+  if (!openLibraryBook) throw new Error('Bu ISBN için kitap bilgisi bulunamadı.');
 
-    try {
-      const authorResponse = await fetch(`https://openlibrary.org${authorKey}.json`);
-      if (!authorResponse.ok) return '';
-      const authorData = await authorResponse.json();
-      return authorData.name || authorData.personal_name || '';
-    } catch (error) {
-      return '';
-    }
-  }));
-  const authors = authorNames.filter(Boolean).join(', ');
-  const publishDate = data.publish_date || '';
-  const year = publishDate ? publishDate.split(' ')[0] || '' : '';
-  const metadata = {
-    ...data,
-    resolved_authors: authorNames.filter(Boolean)
-  };
-
-  return {
-    title,
-    author: authors,
-    year,
-    isbn,
-    tags: ['isbn', 'otomatik'],
-    metadata
-  };
+  return openLibraryBook;
 }
 
 function saveDbFile() {

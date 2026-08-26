@@ -5,6 +5,7 @@ Bu proje, sahip olduğunuz kitapları takip etmek için hazırlanmış, Netlify 
 ## Özellikler
 - Manuel kitap ekleme
 - ISBN / barkod girişi ile otomatik kitap bilgisi çekme
+- Google Books ve Open Library Search fallback ile genişletilmiş ISBN araması
 - Kamera erişimi ile barkod tarama (tarayıcı destekliyse)
 - Kamera görüntüsündeki yazılı ISBN'yi OCR ile okuma
 - Okundu / okunmadı takibi
@@ -45,6 +46,8 @@ http://localhost:8000
 3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
 4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
 5. E-posta doğrulaması kullanılacaksa SMTP ve Redirect URL ayarlarını da yapılandırın.
+
+Google Books isteğe bağlı API anahtarıyla da kullanılabilir. Kota sınırını artırmak için Google Cloud Console'dan Books API anahtarı alıp `supabase-config.js` içindeki `GOOGLE_BOOKS_API_KEY` alanına yazabilirsiniz. Boş bırakılırsa anahtarsız istek yapılır ve başarısız durumda Open Library Search kullanılır.
 
 `supabase-config.js` yalnızca frontend için tasarlanmış public anon key içerir. Service role key'i bu dosyaya koymayın.
 
