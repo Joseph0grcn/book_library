@@ -211,26 +211,62 @@ function formatPostgrestInValue(value) {
 }
 
 let realtimeChannel = null;
+let realtimeRefreshTimer = null;
+let realtimeRefreshInFlight = false;
+let realtimeRefreshQueued = false;
 
 export function setupRealtimeSubscription(onUpdateCallback) {
   if (!supabaseClient || !activeUser) return;
+  if (realtimeRefreshTimer) {
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer = null;
+  }
+  realtimeRefreshQueued = false;
   if (realtimeChannel) {
     supabaseClient.removeChannel(realtimeChannel);
   }
+
+  const refreshFromRealtime = async () => {
+    if (realtimeRefreshInFlight) {
+      realtimeRefreshQueued = true;
+      return;
+    }
+
+    realtimeRefreshInFlight = true;
+    try {
+      const freshBooks = await fetchAllBooksFromServer();
+      saveBooks(freshBooks);
+      if (typeof onUpdateCallback === 'function') {
+        onUpdateCallback(freshBooks);
+      }
+      showToast('Kütüphane canlı olarak güncellendi.', 'info');
+    } finally {
+      realtimeRefreshInFlight = false;
+      if (realtimeRefreshQueued) {
+        realtimeRefreshQueued = false;
+        scheduleRealtimeRefresh();
+      }
+    }
+  };
+
+  const scheduleRealtimeRefresh = () => {
+    if (realtimeRefreshInFlight) {
+      realtimeRefreshQueued = true;
+      return;
+    }
+    if (realtimeRefreshTimer) return;
+    realtimeRefreshTimer = setTimeout(() => {
+      realtimeRefreshTimer = null;
+      refreshFromRealtime();
+    }, 300);
+  };
 
   realtimeChannel = supabaseClient
     .channel('public:books')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'books', filter: `user_id=eq.${activeUser.id}` },
-      async () => {
-        const freshBooks = await fetchAllBooksFromServer();
-        saveBooks(freshBooks);
-        if (typeof onUpdateCallback === 'function') {
-          onUpdateCallback(freshBooks);
-        }
-        showToast('Kütüphane canlı olarak güncellendi.', 'info');
-      }
+      scheduleRealtimeRefresh
     )
     .subscribe();
 }
