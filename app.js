@@ -248,6 +248,17 @@ function setup() {
   const scannerVideo = document.getElementById('scanner-video');
   let scannerLoopToken = 0;
 
+  function setScannerVisible(isVisible) {
+    scannerModal.classList.toggle('hidden', !isVisible);
+    scannerModal.setAttribute('aria-hidden', String(!isVisible));
+    scannerModal.hidden = !isVisible;
+    if (isVisible) {
+      scannerModal.style.display = 'flex';
+    } else {
+      scannerModal.style.display = 'none';
+    }
+  }
+
   function setMode(mode) {
     const isManual = mode === 'manual';
     modeManual.classList.toggle('active', isManual);
@@ -267,11 +278,11 @@ function setup() {
       scannerVideo.srcObject.getTracks().forEach((track) => track.stop());
       scannerVideo.srcObject = null;
     }
-    scannerModal.classList.add('hidden');
+    setScannerVisible(false);
     setStatus('');
   }
 
-  scannerModal.classList.add('hidden');
+  setScannerVisible(false);
   setMode('manual');
 
   modeManual.addEventListener('click', () => setMode('manual'));
@@ -293,7 +304,7 @@ function setup() {
 
   async function openScanner() {
     setMode('isbn');
-    scannerModal.classList.remove('hidden');
+    setScannerVisible(true);
     setStatus('Kamera açılıyor...');
 
     try {
@@ -361,6 +372,7 @@ function setup() {
 
       if (!window.Quagga) {
         setStatus('Barkod tarayıcı yüklenmedi. ISBN alanını manuel yazabilirsiniz.', true);
+        setScannerVisible(false);
         return;
       }
 

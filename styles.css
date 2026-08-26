@@ -73,6 +73,10 @@ h1 {
   display: none;
 }
 
+.scanner-modal.hidden {
+  display: none;
+}
+
 #book-form {
   display: flex;
   flex-wrap: wrap;
