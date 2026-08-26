@@ -1,5 +1,5 @@
 :root {
-  --bg: #eef4f1;
+  --bg: #edf4f1;
   --card: #ffffff;
   --primary: #176b5b;
   --primary-dark: #0d5145;
@@ -7,6 +7,7 @@
   --muted: #66807a;
   --border: #d8e5e1;
   --danger: #c94c4c;
+  --soft: #e3f0ec;
 }
 
 * {
@@ -16,13 +17,13 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top right, #d8eee7 0, transparent 30%), var(--bg);
+  background: linear-gradient(135deg, #edf4f1 0%, #f8fbfa 54%, #dceee8 100%);
   color: var(--text);
   padding: 36px 24px 56px;
 }
 
 #app {
-  max-width: 980px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
@@ -31,14 +32,15 @@ header {
   justify-content: space-between;
   align-items: end;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 h1 {
   margin: 0;
   font-family: Georgia, serif;
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  letter-spacing: 0;
+  line-height: 0.98;
 }
 
 .eyebrow {
@@ -52,20 +54,33 @@ h1 {
 .intro {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .library-stats {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  color: var(--muted);
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  gap: 0 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 .library-stats strong {
   color: var(--primary);
   font-family: Georgia, serif;
-  font-size: 2.3rem;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.stats-label {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .controls,
@@ -77,13 +92,14 @@ h1 {
 }
 
 .controls {
-  padding: 20px;
+  padding: 22px;
+  backdrop-filter: blur(8px);
 }
 
 .mode-switch {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .mode {
@@ -93,6 +109,7 @@ h1 {
 .mode.active {
   background: var(--primary);
   color: white;
+  box-shadow: 0 6px 14px rgba(23, 107, 91, 0.22);
 }
 
 .mode-switch .mode {
@@ -169,7 +186,7 @@ button:hover {
 }
 
 button.secondary {
-  background: #e3f0ec;
+  background: var(--soft);
   color: var(--text);
 }
 
@@ -190,7 +207,9 @@ button.danger:hover {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 14px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
 }
 
 #search {

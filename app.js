@@ -463,7 +463,7 @@ function setup() {
   }
 
   setScannerVisible(false);
-  setMode('manual');
+  setMode('isbn');
 
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
