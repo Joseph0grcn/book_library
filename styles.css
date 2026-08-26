@@ -1,24 +1,24 @@
 :root {
-  --bg: #f4f7fb;
+  --bg: #eef4f1;
   --card: #ffffff;
-  --primary: #2d6cdf;
-  --primary-dark: #1d4fbf;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --danger: #dc2626;
+  --primary: #176b5b;
+  --primary-dark: #0d5145;
+  --text: #19332f;
+  --muted: #66807a;
+  --border: #d8e5e1;
+  --danger: #c94c4c;
 }
 
 * {
   box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", sans-serif;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(circle at top right, #d8eee7 0, transparent 30%), var(--bg);
   color: var(--text);
-  padding: 24px;
+  padding: 36px 24px 56px;
 }
 
 #app {
@@ -27,24 +27,57 @@ body {
 }
 
 header {
-  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 28px;
 }
 
 h1 {
   margin: 0;
-  font-size: 2rem;
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.intro {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.library-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--muted);
+}
+
+.library-stats strong {
+  color: var(--primary);
+  font-family: Georgia, serif;
+  font-size: 2.3rem;
 }
 
 .controls,
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(29, 70, 62, 0.07);
 }
 
 .controls {
-  padding: 16px;
+  padding: 20px;
 }
 
 .mode-switch {
@@ -60,6 +93,10 @@ h1 {
 .mode.active {
   background: var(--primary);
   color: white;
+}
+
+.mode-switch .mode {
+  font-weight: 700;
 }
 
 .entry-panel {
@@ -96,7 +133,7 @@ button {
 #filter {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   min-width: 140px;
 }
 
@@ -132,12 +169,12 @@ button:hover {
 }
 
 button.secondary {
-  background: #eef2ff;
+  background: #e3f0ec;
   color: var(--text);
 }
 
 button.secondary:hover {
-  background: #e0e7ff;
+  background: #d1e7e0;
 }
 
 button.danger {
@@ -342,6 +379,12 @@ button.danger:hover {
 @media (max-width: 640px) {
   body {
     padding: 16px;
+  }
+
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .card {

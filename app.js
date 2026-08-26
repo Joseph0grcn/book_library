@@ -85,6 +85,8 @@ async function syncBooksToServer(books) {
 function render() {
   const list = document.getElementById('list');
   const books = loadBooks();
+  const bookCount = document.getElementById('book-count');
+  if (bookCount) bookCount.textContent = books.length;
   const query = document.getElementById('search').value.trim().toLowerCase();
   const filter = document.getElementById('filter').value;
 
@@ -444,6 +446,7 @@ function setup() {
     modeIsbn.classList.toggle('secondary', isManual);
     manualFields.classList.toggle('hidden', !isManual);
     isbnFields.classList.toggle('hidden', isManual);
+    document.getElementById('save-book').classList.toggle('hidden', !isManual);
   }
 
   function stopScanner() {
@@ -466,15 +469,26 @@ function setup() {
   modeIsbn.addEventListener('click', () => setMode('isbn'));
   document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
 
+  async function saveFetchedBook(book) {
+    const books = loadBooks();
+    if (books.some((item) => item.isbn === book.isbn)) {
+      setStatus('Bu ISBN zaten kütüphanede kayıtlı.');
+      return false;
+    }
+    books.unshift(createBook({ ...book, read: document.getElementById('read').checked }));
+    saveBooks(books);
+    await syncBooksToServer(books);
+    render();
+    return true;
+  }
+
   document.getElementById('lookup-book').addEventListener('click', async () => {
     try {
       setStatus('ISBN bilgisi alınıyor...');
       const result = await fetchBookMetadata(isbnInput.value);
-      document.getElementById('title').value = result.title;
-      document.getElementById('author').value = result.author;
-      document.getElementById('year').value = result.year;
-      document.getElementById('tags').value = result.tags.join(', ');
-      setStatus('Kitap bilgisi hazır. Kaydet butonuna basabilirsiniz.');
+      applyBookToForm(result);
+      const saved = await saveFetchedBook(result);
+      setStatus(saved ? 'Kitap ISBN ile kütüphaneye eklendi.' : 'Bu ISBN zaten kütüphanede kayıtlı.');
     } catch (error) {
       setStatus(error.message, true);
     }
@@ -493,8 +507,8 @@ function setup() {
     setStatus(`${source} algılandı. Bilgi getiriliyor...`);
     stopScanner();
     const book = await fetchBookMetadata(cleaned);
-    applyBookToForm(book);
-    setStatus(`${source} bilgisi hazır. Kaydet butonuna basabilirsiniz.`);
+    const saved = await saveFetchedBook(book);
+    setStatus(saved ? `${source} ile kitap kütüphaneye eklendi.` : 'Bu ISBN zaten kütüphanede kayıtlı.');
   }
 
   async function openScanner() {

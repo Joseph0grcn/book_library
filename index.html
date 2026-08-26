@@ -9,7 +9,15 @@
 <body>
   <div id="app">
     <header>
-      <h1>Kitap Kütüphanem</h1>
+      <div>
+        <p class="eyebrow">KİŞİSEL KOLEKSİYON</p>
+        <h1>Kitap Kütüphanem</h1>
+        <p class="intro">Kitaplarını ekle, keşfet ve okuma yolculuğunu tek yerde takip et.</p>
+      </div>
+      <div class="library-stats" aria-label="Kütüphane özeti">
+        <strong id="book-count">0</strong>
+        <span>kitap</span>
+      </div>
     </header>
 
     <section class="controls">
@@ -36,7 +44,7 @@
           <input id="read" type="checkbox" />
           <span>Okudum</span>
         </label>
-        <button type="submit">Kitabı Kaydet</button>
+        <button type="submit" id="save-book">Kitabı Kaydet</button>
       </form>
 
       <div class="filters">
