@@ -13,17 +13,18 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --primary: #2dd4bf;
-  --primary-dark: #14b8a6;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --border: #334155;
-  --danger: #f87171;
-  --soft: #334155;
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 54%, #0284c7 100%);
-  --star: #fbbf24;
+  --bg: #002b36;
+  --card: #073642;
+  --primary: #2aa198;
+  --primary-dark: #268bd2;
+  --text: #93a1a1;
+  --muted: #839496;
+  --border: #18515c;
+  --danger: #dc322f;
+  --soft: #0b4652;
+  --bg-gradient: linear-gradient(135deg, #002b36 0%, #073642 100%);
+  --star: #b58900;
+  color-scheme: dark;
 }
 
 * {
@@ -1328,14 +1329,93 @@ button.danger:hover {
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
-  background: #0f172a;
-  color: #f8fafc;
-  border-color: #334155;
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
 }
 
+:root[data-theme="dark"] .auth-panel,
+:root[data-theme="dark"] .library-stats,
+:root[data-theme="dark"] .page-nav,
+:root[data-theme="dark"] #book-form > .reading-tools,
+:root[data-theme="dark"] .stats-summary-grid div,
+:root[data-theme="dark"] .card-widget,
+:root[data-theme="dark"] .scanner-window,
+:root[data-theme="dark"] .lookup-error-window,
+:root[data-theme="dark"] .cover-lightbox,
 :root[data-theme="dark"] .edit-window,
 :root[data-theme="dark"] .filter-menu {
-  background: #1e293b;
-  color: #f8fafc;
+  background: var(--card);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .auth-panel,
+:root[data-theme="dark"] .library-stats,
+:root[data-theme="dark"] .page-nav {
+  background: rgba(7, 54, 66, 0.94);
+}
+
+:root[data-theme="dark"] .metadata-field,
+:root[data-theme="dark"] .large-cover,
+:root[data-theme="dark"] .lookup-error-isbn {
+  background: var(--soft);
+}
+
+:root[data-theme="dark"] .scanner-header {
+  background: var(--card);
+}
+
+:root[data-theme="dark"] .mode-switch {
+  background: rgba(0, 43, 54, 0.92);
+}
+
+:root[data-theme="dark"] button.secondary:hover {
+  background: #176b73;
+}
+
+:root[data-theme="dark"] button.danger:hover {
+  background: #b52b2a;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #6f8f91;
+}
+
+:root[data-theme="dark"] .connection-status.sync-error {
+  color: #cb4b16;
+}
+
+:root[data-theme="dark"] .connection-status.sync-error::before {
+  background: #cb4b16;
+}
+
+:root[data-theme="dark"] #auth-error-modal .scanner-header {
+  background: #3b2025 !important;
+}
+
+:root[data-theme="dark"] #auth-error-title,
+:root[data-theme="dark"] #auth-error-message {
+  color: #ff6b6b !important;
+}
+
+:root[data-theme="dark"] .toast-success .toast-icon {
+  background: #164b48;
+  color: #2aa198;
+}
+
+:root[data-theme="dark"] .toast-error .toast-icon {
+  background: #572326;
+  color: #ff6b6b;
+}
+
+:root[data-theme="dark"] .toast-info .toast-icon {
+  background: #123f55;
+  color: #268bd2;
+}
+
+:root[data-theme="dark"] .toast-badge .toast-icon {
+  background: #4d3c13;
+  color: #b58900;
 }
 
