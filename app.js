@@ -1048,6 +1048,10 @@ async function initializeApp() {
 
   const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
+    const otherMenu = menu === filterMenu ? actionsMenu : filterMenu;
+    const otherToggle = toggle === filterMenuToggle ? actionsMenuToggle : filterMenuToggle;
+    otherMenu.classList.remove('is-open');
+    otherToggle.setAttribute('aria-expanded', 'false');
     const isOpen = menu.classList.toggle('is-open');
     toggle.setAttribute('aria-expanded', String(isOpen));
   };

@@ -427,6 +427,15 @@ button.danger:hover {
   display: grid;
 }
 
+@media (min-width: 641px) {
+  .filters > .filter-menu-toggle:hover + .filter-menu,
+  .filters > .filter-menu:hover,
+  .filters > .actions-menu-toggle:hover + .actions-menu,
+  .filters > .actions-menu:hover {
+    display: grid;
+  }
+}
+
 .filters > .filter-menu:not(.actions-menu) {
   right: 58px;
 }
