@@ -889,7 +889,7 @@ function setup() {
     }
   });
 
-  document.getElementById('clear').addEventListener('click', () => {
+  document.getElementById('clear').addEventListener('click', async () => {
     if (!confirm('Tüm kitapları silmek istediğinize emin misiniz?')) return;
     localStorage.removeItem(userStorageKey());
     await syncBooksToServer([]);
