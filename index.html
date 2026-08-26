@@ -146,6 +146,17 @@
       </div>
     </div>
 
+    <div id="lookup-error-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="lookup-error-title">
+      <div class="lookup-error-window">
+        <div class="scanner-header">
+          <strong id="lookup-error-title">Kitap bulunamadı</strong>
+          <button type="button" id="close-lookup-error" class="secondary small">Kapat</button>
+        </div>
+        <p id="lookup-error-message"></p>
+        <p class="lookup-error-isbn"><strong>Aranan ISBN:</strong> <span id="lookup-error-isbn"></span></p>
+      </div>
+    </div>
+
     <section id="status" class="status"></section>
     <section id="list" class="list"></section>
   </div>

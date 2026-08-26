@@ -394,6 +394,25 @@ button.danger:hover {
   border: 1px solid var(--border);
 }
 
+.lookup-error-window {
+  width: min(92vw, 460px);
+  padding-bottom: 8px;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.lookup-error-window > p {
+  margin: 16px 18px;
+}
+
+.lookup-error-isbn {
+  padding: 12px;
+  background: #fff4f1;
+  border-radius: 8px;
+}
+
 .scanner-header {
   display: flex;
   justify-content: space-between;

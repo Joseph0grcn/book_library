@@ -74,6 +74,13 @@ function setStatus(message, isError = false) {
   status.style.color = isError ? '#b91c1c' : '#475569';
 }
 
+function showLookupError(isbn, message) {
+  const modal = document.getElementById('lookup-error-modal');
+  document.getElementById('lookup-error-message').textContent = message || 'Kitap bilgisi alınamadı.';
+  document.getElementById('lookup-error-isbn').textContent = isbn || 'Okunamadı';
+  modal.classList.remove('hidden');
+}
+
 async function fetchAllBooksFromServer() {
   if (supabaseClient && activeUser) {
     const { data, error } = await supabaseClient.from('books').select('*').eq('user_id', activeUser.id).order('created_at', { ascending: false });
@@ -508,6 +515,7 @@ function setup() {
   const readPrintedIsbn = document.getElementById('read-printed-isbn');
   const scanBarcode = document.getElementById('scan-barcode');
   const scanPrintedIsbn = document.getElementById('scan-printed-isbn');
+  const lookupErrorModal = document.getElementById('lookup-error-modal');
   const readingStatus = document.getElementById('reading-status');
   const progress = document.getElementById('progress');
   const progressValue = document.getElementById('progress-value');
@@ -554,6 +562,10 @@ function setup() {
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
   document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
+  document.getElementById('close-lookup-error').addEventListener('click', () => lookupErrorModal.classList.add('hidden'));
+  lookupErrorModal.addEventListener('click', (event) => {
+    if (event.target === lookupErrorModal) lookupErrorModal.classList.add('hidden');
+  });
 
   async function saveFetchedBook(book) {
     const books = loadBooks();
@@ -585,6 +597,7 @@ function setup() {
       setStatus(saved ? 'Kitap ISBN ile kütüphaneye eklendi.' : 'Bu ISBN zaten kütüphanede kayıtlı.');
     } catch (error) {
       setStatus(error.message, true);
+      showLookupError(isbnInput.value.replace(/[^0-9Xx]/g, ''), error.message);
     }
   });
 
@@ -649,6 +662,7 @@ function setup() {
               handleScannedIsbn(cleaned, 'Barkod')
                 .catch((error) => {
                   setStatus(error.message, true);
+                  showLookupError(cleaned, error.message);
                 });
               return;
             }
@@ -699,6 +713,7 @@ function setup() {
           handleScannedIsbn(cleaned, 'Barkod')
             .catch((error) => {
               setStatus(error.message, true);
+              showLookupError(cleaned, error.message);
             });
         });
 
@@ -738,13 +753,18 @@ function setup() {
         .find((candidate) => candidate.length === 10 || candidate.length === 13);
 
       if (!isbn) {
-        setStatus('Yazılı ISBN bulunamadı. Numarayı daha yakından ve aydınlıkta gösterin.', true);
+        const recognizedText = text.trim().replace(/\s+/g, ' ').slice(0, 80);
+        const message = 'Yazılı ISBN bulunamadı. Numarayı daha yakından ve aydınlıkta gösterin.';
+        setStatus(message, true);
+        showLookupError(recognizedText, message);
         return;
       }
 
       await handleScannedIsbn(isbn, 'Yazılı ISBN');
     } catch (error) {
-      setStatus('Yazılı ISBN okunamadı. Numarayı elle yazabilirsiniz.', true);
+      const message = 'Yazılı ISBN okunamadı. Numarayı elle yazabilirsiniz.';
+      setStatus(message, true);
+      showLookupError(isbnInput.value, message);
     } finally {
       readPrintedIsbn.disabled = false;
     }
@@ -796,6 +816,7 @@ function setup() {
         document.getElementById('tags').value = tags.join(', ');
       } catch (error) {
         setStatus(error.message, true);
+        showLookupError(isbnInput.value.replace(/[^0-9Xx]/g, ''), error.message);
         return;
       }
     }
