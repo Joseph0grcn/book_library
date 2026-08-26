@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kitap Kütüphanem</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Kitap Kütüphanem</h1>
+    </header>
+
+    <section class="controls">
+      <form id="book-form">
+        <input id="title" type="text" placeholder="Başlık" required />
+        <input id="author" type="text" placeholder="Yazar" />
+        <input id="year" type="number" placeholder="Yıl" min="0" />
+        <input id="tags" type="text" placeholder="Etiketler (virgülle ayrılmış)" />
+        <label class="checkbox">
+          <input id="read" type="checkbox" />
+          <span>Okudum</span>
+        </label>
+        <button type="submit">Ekle</button>
+      </form>
+
+      <div class="filters">
+        <input id="search" type="search" placeholder="Ara başlık veya yazar..." />
+        <select id="filter">
+          <option value="all">Hepsi</option>
+          <option value="read">Okunanlar</option>
+          <option value="unread">Okunmayanlar</option>
+        </select>
+        <button id="export" class="secondary">Dışa Aktar</button>
+        <input id="import-file" type="file" accept="application/json" hidden />
+        <button id="import" class="secondary">İçe Aktar</button>
+        <button id="clear" class="danger">Tümünü Sil</button>
+      </div>
+    </section>
+
+    <section id="list" class="list"></section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
