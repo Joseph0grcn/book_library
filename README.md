@@ -13,6 +13,7 @@ Bu proje, sahip olduğunuz kitapları takip etmek için hazırlanmış, Netlify 
 - `db.json` üzerinden kalıcı kayıt
 - JSON dışa aktarma / içe aktarma
 - Netlify üzerinde yayınlanabilir statik yapı
+- Supabase ile kullanıcı hesabı ve kişiye özel kitaplık
 
 ## Yerel çalıştırma
 Netlify Functions çalışması için yerelde bir tarayıcı ve Netlify CLI ya da benzer bir yerel sunucu gerekir.
@@ -37,6 +38,15 @@ http://localhost:8000
 4. Build komutunu boş bırakın.
 5. Publish directory olarak proje kökünü seçin.
 6. Netlify, `netlify/functions` içindeki serverless işlevleri otomatik algılar.
+
+## Supabase kurulumu
+1. Supabase projesi oluşturun.
+2. SQL Editor'da `supabase-schema.sql` dosyasını çalıştırın.
+3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
+4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
+5. E-posta doğrulaması kullanılacaksa SMTP ve Redirect URL ayarlarını da yapılandırın.
+
+`supabase-config.js` yalnızca frontend için tasarlanmış public anon key içerir. Service role key'i bu dosyaya koymayın.
 
 ## Dosyalar
 - `index.html`

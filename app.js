@@ -1,5 +1,14 @@
 const STORAGE_KEY = 'book_library_books';
 const DB_FILE_NAME = 'db.json';
+const supabaseClient = window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY && !window.SUPABASE_URL.includes('YOUR_')
+  ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+  : null;
+let activeUser = null;
+let appInitialized = false;
+
+function userStorageKey() {
+  return activeUser ? `${STORAGE_KEY}_${activeUser.id}` : STORAGE_KEY;
+}
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -26,7 +35,7 @@ function normalizeBook(rawBook) {
 
 function loadBooks() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(userStorageKey());
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list.map(normalizeBook) : [];
   } catch (error) {
@@ -36,7 +45,7 @@ function loadBooks() {
 }
 
 function saveBooks(books) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+  localStorage.setItem(userStorageKey(), JSON.stringify(books));
 }
 
 function createBook({ title, author, year, tags, read, status, progress, rating, review, notes, isbn, metadata }) {
@@ -66,6 +75,12 @@ function setStatus(message, isError = false) {
 }
 
 async function fetchAllBooksFromServer() {
+  if (supabaseClient && activeUser) {
+    const { data, error } = await supabaseClient.from('books').select('*').eq('user_id', activeUser.id).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
+      return data.map((book) => normalizeBook({ ...book, createdAt: book.created_at }));
+    }
+  }
   try {
     const response = await fetch('/.netlify/functions/books');
     if (!response.ok) throw new Error('Sunucudan veri alınamadı');
@@ -77,6 +92,37 @@ async function fetchAllBooksFromServer() {
 }
 
 async function syncBooksToServer(books) {
+  if (supabaseClient && activeUser) {
+    const rows = books.map((book) => ({
+      id: book.id,
+      user_id: activeUser.id,
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      tags: book.tags,
+      read: book.read,
+      status: book.status,
+      progress: book.progress,
+      rating: book.rating,
+      review: book.review,
+      notes: book.notes,
+      isbn: book.isbn,
+      metadata: book.metadata,
+      created_at: new Date(book.createdAt).toISOString()
+    }));
+    const { data, error } = await supabaseClient.from('books').upsert(rows).select();
+    if (!error) {
+      const ids = books.map((book) => book.id);
+      if (ids.length) {
+        await supabaseClient.from('books').delete().eq('user_id', activeUser.id).not('id', 'in', `(${ids.join(',')})`);
+      } else {
+        await supabaseClient.from('books').delete().eq('user_id', activeUser.id);
+      }
+      return data;
+    }
+    saveBooks(books);
+    return { fallback: true };
+  }
   try {
     const response = await fetch('/.netlify/functions/books', {
       method: 'POST',
@@ -845,7 +891,8 @@ function setup() {
 
   document.getElementById('clear').addEventListener('click', () => {
     if (!confirm('Tüm kitapları silmek istediğinize emin misiniz?')) return;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(userStorageKey());
+    await syncBooksToServer([]);
     render();
     setStatus('Tüm kitap kayıtları silindi.');
   });
@@ -853,4 +900,65 @@ function setup() {
   render();
 }
 
-document.addEventListener('DOMContentLoaded', setup);
+async function initializeApp() {
+  const authGate = document.getElementById('auth-gate');
+  const app = document.getElementById('app');
+  const authStatus = document.getElementById('auth-status');
+  const authForm = document.getElementById('auth-form');
+  const registerButton = document.getElementById('auth-register');
+
+  if (!supabaseClient) {
+    authStatus.textContent = 'Supabase ayarları yapılmamış. supabase-config.js dosyasını doldurun.';
+    return;
+  }
+
+  const showApp = async (session) => {
+    activeUser = session.user;
+    authGate.style.display = 'none';
+    app.style.display = 'block';
+    const books = await fetchAllBooksFromServer();
+    saveBooks(books);
+    if (!appInitialized) {
+      setup();
+      appInitialized = true;
+    } else {
+      render();
+    }
+  };
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await showApp(session);
+
+  supabaseClient.auth.onAuthStateChange(async (_event, nextSession) => {
+    if (nextSession) {
+      await showApp(nextSession);
+    } else {
+      activeUser = null;
+      app.style.display = 'none';
+      authGate.style.display = 'flex';
+    }
+  });
+
+  authForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    authStatus.textContent = 'Giriş yapılıyor...';
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: document.getElementById('auth-email').value.trim(),
+      password: document.getElementById('auth-password').value
+    });
+    authStatus.textContent = error ? error.message : '';
+  });
+
+  registerButton.addEventListener('click', async () => {
+    authStatus.textContent = 'Hesap oluşturuluyor...';
+    const { data, error } = await supabaseClient.auth.signUp({
+      email: document.getElementById('auth-email').value.trim(),
+      password: document.getElementById('auth-password').value
+    });
+    authStatus.textContent = error ? error.message : (data.session ? 'Hesabınız oluşturuldu.' : 'E-postanızı doğrulayın, ardından giriş yapın.');
+  });
+
+  document.getElementById('auth-logout').addEventListener('click', () => supabaseClient.auth.signOut());
+}
+
+document.addEventListener('DOMContentLoaded', initializeApp);

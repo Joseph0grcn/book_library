@@ -8,6 +8,20 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <section id="auth-gate" class="auth-gate">
+    <div class="auth-panel">
+      <p class="eyebrow">KİŞİSEL KOLEKSİYON</p>
+      <h1>Kitap Kütüphanem</h1>
+      <p class="intro">Kütüphanene erişmek için giriş yap veya yeni hesap oluştur.</p>
+      <form id="auth-form">
+        <input id="auth-email" type="email" placeholder="E-posta" autocomplete="email" required />
+        <input id="auth-password" type="password" placeholder="Şifre" autocomplete="current-password" minlength="6" required />
+        <button type="submit" id="auth-login">Giriş yap</button>
+        <button type="button" id="auth-register" class="secondary">Hesap oluştur</button>
+      </form>
+      <p id="auth-status" class="status"></p>
+    </div>
+  </section>
   <div id="app">
     <header>
       <div>
@@ -15,6 +29,7 @@
         <h1>Kitap Kütüphanem</h1>
         <p class="intro">Koleksiyonunu tek yerde keşfet, takip et ve büyüt.</p>
       </div>
+      <button type="button" id="auth-logout" class="secondary small">Çıkış yap</button>
       <div class="library-stats" aria-label="Kütüphane özeti">
         <span class="stats-label">KOLEKSİYON</span>
         <strong id="book-count">0</strong>
@@ -137,6 +152,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
