@@ -1012,6 +1012,8 @@ async function initializeApp() {
   const filters = document.querySelector('.filters');
   const filterMenu = document.getElementById('filter-menu');
   const filterMenuToggle = document.getElementById('filter-menu-toggle');
+  const actionsMenu = document.getElementById('actions-menu');
+  const actionsMenuToggle = document.getElementById('actions-menu-toggle');
   const stats = document.getElementById('dashboard-stats');
   const list = document.getElementById('list');
 
@@ -1044,15 +1046,20 @@ async function initializeApp() {
   const initialPage = window.location.hash.slice(1);
   setPage(['add', 'stats'].includes(initialPage) ? initialPage : 'library');
 
-  filterMenuToggle.addEventListener('click', (event) => {
+  const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
-    const isOpen = filterMenu.classList.toggle('is-open');
-    filterMenuToggle.setAttribute('aria-expanded', String(isOpen));
-  });
+    const isOpen = menu.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+  };
+  filterMenuToggle.addEventListener('click', (event) => toggleMenu(filterMenu, filterMenuToggle, event));
+  actionsMenuToggle.addEventListener('click', (event) => toggleMenu(actionsMenu, actionsMenuToggle, event));
   filterMenu.addEventListener('click', (event) => event.stopPropagation());
+  actionsMenu.addEventListener('click', (event) => event.stopPropagation());
   document.addEventListener('click', () => {
     filterMenu.classList.remove('is-open');
     filterMenuToggle.setAttribute('aria-expanded', 'false');
+    actionsMenu.classList.remove('is-open');
+    actionsMenuToggle.setAttribute('aria-expanded', 'false');
   });
 
   if (!supabaseClient) {

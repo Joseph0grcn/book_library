@@ -398,6 +398,15 @@ button.danger:hover {
   font-weight: 700;
 }
 
+.actions-menu-toggle {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 48px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
 .filter-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -418,6 +427,10 @@ button.danger:hover {
   display: grid;
 }
 
+.filters > .filter-menu:not(.actions-menu) {
+  right: 58px;
+}
+
 .filter-menu select,
 .filter-menu button {
   width: 100%;
@@ -426,6 +439,11 @@ button.danger:hover {
 #search {
   flex: 1 1 260px;
   height: 42px;
+  min-height: 42px;
+}
+
+.actions-menu {
+  min-width: 220px;
 }
 
 #filter {
@@ -779,10 +797,25 @@ button.danger:hover {
     min-width: 78px;
   }
 
+  .actions-menu-toggle {
+    min-width: 48px;
+    width: auto;
+  }
+
+  #search {
+    flex: 0 0 42px;
+    height: 42px;
+    min-height: 42px;
+  }
+
   .filter-menu {
     right: 14px;
     left: 14px;
     min-width: 0;
+  }
+
+  .filters > .filter-menu:not(.actions-menu) {
+    right: 14px;
   }
 
   .mobile-tabbar {
