@@ -1,9 +1,9 @@
-import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './config.js';
-import { showToast } from './toast.js';
-import { fetchBookMetadata, findDuplicateBook } from './isbn.js';
-import { addQuote, renderQuotes } from './quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription } from './storage.js';
-import { initTheme, setupStarRating, getStarRatingValue, render, showBookDetail, hideBookDetail, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui.js';
+import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './core/config.js';
+import { showToast } from './ui/toast.js';
+import { fetchBookMetadata, findDuplicateBook } from './features/isbn.js';
+import { addQuote, renderQuotes } from './features/quotes.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription } from './core/storage.js';
+import { initTheme, setupStarRating, getStarRatingValue, render, showBookDetail, hideBookDetail, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
 let deferredInstallPrompt = null;

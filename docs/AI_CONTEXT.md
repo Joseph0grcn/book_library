@@ -11,12 +11,13 @@ Kitap Kütüphanem, build adımı olmayan, tarayıcıda çalışan bir PWA'dır.
 - `index.html`: Sayfa iskeleti, formlar, modallar ve CDN bağımlılıkları.
 - `styles.css`: Açık/koyu tema, responsive yerleşim ve bileşen stilleri.
 - `js/main.js`: Uygulama başlangıcı, auth, sayfa geçişleri, form, tarayıcı ve içe/dışa aktarma olayları.
-- `js/storage.js`: Kitap normalizasyonu, localStorage, Supabase okuma/yazma ve bekleyen senkron kuyruğu.
-- `js/ui.js`: Kitap listesi, ayrıntı görünümü, kapak modalı, düzenleme modalı, istatistik ve tema yardımcıları.
-- `js/isbn.js`: ISBN doğrulama/dönüştürme, Google Books ve Open Library sorguları, yinelenen kitap kontrolü.
-- `js/quotes.js`: Alıntıların yerel saklanması, basit Markdown gösterimi ve kopyalama/silme işlemleri.
-- `js/badges.js`: Rozet koşulları ve rozet görünümü.
-- `js/config.js`: Storage anahtarları, kullanıcı bağlamı ve Supabase istemcisi.
+- `js/core/storage.js`: Kitap normalizasyonu, localStorage, Supabase okuma/yazma ve bekleyen senkron kuyruğu.
+- `js/core/config.js`: Storage anahtarları, kullanıcı bağlamı ve Supabase istemcisi.
+- `js/ui/ui.js`: Kitap listesi, ayrıntı görünümü, kapak modalı, düzenleme modalı, istatistik ve tema yardımcıları.
+- `js/ui/toast.js`: Uygulama içi bildirimler.
+- `js/features/isbn.js`: ISBN doğrulama/dönüştürme, Google Books ve Open Library sorguları, yinelenen kitap kontrolü.
+- `js/features/quotes.js`: Alıntıların yerel saklanması, basit Markdown gösterimi ve kopyalama/silme işlemleri.
+- `js/features/badges.js`: Rozet koşulları ve rozet görünümü.
 - `supabase-schema.sql`: `books` tablosu, RLS politikaları ve indeksler.
 - `supabase-config.js`: Yalnızca frontend'de bulunabilecek Supabase URL/anon anahtarı ve isteğe bağlı Google Books anahtarı.
 - `sw.js`: Uygulama kabuğu cache'i ve ağdan öncelikli PWA stratejisi.
