@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'book_library_books';
+const PENDING_SYNC_KEY = 'book_library_pending_sync';
 const DB_FILE_NAME = 'db.json';
 const supabaseClient = window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY && !window.SUPABASE_URL.includes('YOUR_')
   ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
@@ -27,6 +28,7 @@ function setupPwaUi() {
     connectionStatus.classList.toggle('offline', !navigator.onLine);
   };
   window.addEventListener('online', updateConnectionStatus);
+  window.addEventListener('online', flushPendingSync);
   window.addEventListener('offline', updateConnectionStatus);
   updateConnectionStatus();
 }
@@ -35,8 +37,67 @@ function userStorageKey() {
   return activeUser ? `${STORAGE_KEY}_${activeUser.id}` : STORAGE_KEY;
 }
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function convertIsbn10To13(isbn10) {
+  if (!isbn10 || isbn10.length !== 10) return null;
+  const core = '978' + isbn10.slice(0, 9);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += Number(core[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+  return core + checkDigit;
+}
+
+function convertIsbn13To10(isbn13) {
+  if (!isbn13 || isbn13.length !== 13 || !isbn13.startsWith('978')) return null;
+  const core = isbn13.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += Number(core[i]) * (10 - i);
+  }
+  const remainder = (11 - (sum % 11)) % 11;
+  const checkDigit = remainder === 10 ? 'X' : String(remainder);
+  return core + checkDigit;
+}
+
+function getIsbnVariants(isbnInput) {
+  if (!isbnInput) return new Set();
+  const clean = isbnInput.replace(/[^0-9Xx]/g, '').toUpperCase();
+  const variants = new Set();
+  if (clean) variants.add(clean);
+  if (clean.length === 10) {
+    const v13 = convertIsbn10To13(clean);
+    if (v13) variants.add(v13);
+  } else if (clean.length === 13) {
+    const v10 = convertIsbn13To10(clean);
+    if (v10) variants.add(v10);
+  }
+  return variants;
+}
+
+function findDuplicateBook(bookCheck, existingBooks) {
+  const checkVariants = bookCheck.isbn ? getIsbnVariants(bookCheck.isbn) : new Set();
+  const cleanTitle = (bookCheck.title || '').trim().toLowerCase();
+  const cleanAuthor = (bookCheck.author || '').trim().toLowerCase();
+
+  return existingBooks.find((existing) => {
+    if (bookCheck.id && existing.id === bookCheck.id) return false;
+
+    if (existing.isbn && checkVariants.size > 0) {
+      const existingVariants = getIsbnVariants(existing.isbn);
+      for (const variant of checkVariants) {
+        if (existingVariants.has(variant)) return existing;
+      }
+    }
+
+    if (cleanTitle && (existing.title || '').trim().toLowerCase() === cleanTitle) {
+      if (!cleanAuthor || (existing.author || '').trim().toLowerCase() === cleanAuthor) {
+        return existing;
+      }
+    }
+
+    return false;
+  });
 }
 
 function normalizeBook(rawBook) {
@@ -52,6 +113,9 @@ function normalizeBook(rawBook) {
     rating: Number.isFinite(Number(rawBook.rating)) ? Number(rawBook.rating) : 0,
     review: rawBook.review || '',
     notes: rawBook.notes || '',
+    shelf: rawBook.shelf || 'owned',
+    startDate: rawBook.startDate || rawBook.start_date || '',
+    finishDate: rawBook.finishDate || rawBook.finish_date || '',
     isbn: rawBook.isbn || '',
     metadata: rawBook.metadata && typeof rawBook.metadata === 'object' ? rawBook.metadata : {},
     createdAt: rawBook.createdAt || Date.now()
@@ -73,7 +137,23 @@ function saveBooks(books) {
   localStorage.setItem(userStorageKey(), JSON.stringify(books));
 }
 
-function createBook({ title, author, year, tags, read, status, progress, rating, review, notes, isbn, metadata }) {
+function queuePendingSync(books) {
+  localStorage.setItem(`${PENDING_SYNC_KEY}_${activeUser?.id || 'local'}`, JSON.stringify(books));
+}
+
+async function flushPendingSync() {
+  if (!activeUser || !supabaseClient || !navigator.onLine) return;
+  const key = `${PENDING_SYNC_KEY}_${activeUser.id}`;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const books = JSON.parse(raw);
+    const result = await syncBooksToServer(books);
+    if (!result?.fallback) localStorage.removeItem(key);
+  } catch (error) {}
+}
+
+function createBook({ title, author, year, tags, read, status, progress, rating, review, notes, shelf, startDate, finishDate, isbn, metadata }) {
   return normalizeBook({
     id: uid(),
     title: title || 'Başlıksız',
@@ -86,6 +166,9 @@ function createBook({ title, author, year, tags, read, status, progress, rating,
     rating: rating || 0,
     review: review || '',
     notes: notes || '',
+    shelf: shelf || 'owned',
+    startDate: startDate || '',
+    finishDate: finishDate || '',
     isbn: isbn || '',
     metadata: metadata || {},
     createdAt: Date.now()
@@ -110,19 +193,12 @@ async function fetchAllBooksFromServer() {
   if (supabaseClient && activeUser) {
     const { data, error } = await supabaseClient.from('books').select('*').eq('user_id', activeUser.id).order('created_at', { ascending: false });
     if (!error && Array.isArray(data)) {
-      return data.map((book) => normalizeBook({ ...book, createdAt: book.created_at }));
+      return data.map((book) => normalizeBook({ ...book, createdAt: book.created_at, startDate: book.start_date, finishDate: book.finish_date }));
     }
     setStatus('Kütüphane sunucudan alınamadı. Yerel kayıtlar gösteriliyor.', true);
     return loadBooks();
   }
-  try {
-    const response = await fetch('/.netlify/functions/books');
-    if (!response.ok) throw new Error('Sunucudan veri alınamadı');
-    const data = await response.json();
-    return Array.isArray(data) ? data.map(normalizeBook) : [];
-  } catch (error) {
-    return loadBooks();
-  }
+  return loadBooks();
 }
 
 async function syncBooksToServer(books) {
@@ -140,6 +216,9 @@ async function syncBooksToServer(books) {
       rating: book.rating,
       review: book.review,
       notes: book.notes,
+      shelf: book.shelf,
+      start_date: book.startDate || '',
+      finish_date: book.finishDate || '',
       isbn: book.isbn,
       metadata: book.metadata,
       created_at: new Date(book.createdAt).toISOString()
@@ -155,21 +234,23 @@ async function syncBooksToServer(books) {
       return data;
     }
     saveBooks(books);
+    queuePendingSync(books);
     return { fallback: true };
   }
-  try {
-    const response = await fetch('/.netlify/functions/books', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(books)
-    });
-    if (!response.ok) throw new Error('Sunucu kaydı başarısız');
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    saveBooks(books);
-    return { fallback: true };
-  }
+  saveBooks(books);
+  queuePendingSync(books);
+  return { fallback: true };
+}
+
+
+function getShelfLabel(shelfKey) {
+  const map = {
+    owned: 'Sahip olduklarım',
+    wishlist: 'Okuma listem',
+    favorites: 'Favorilerim',
+    reread: 'Tekrar okunacaklar'
+  };
+  return map[shelfKey] || shelfKey || 'Sahip olduklarım';
 }
 
 function render() {
@@ -181,20 +262,96 @@ function render() {
   const statRead = document.getElementById('stat-read');
   const statTotal = document.getElementById('stat-total');
   const statProgress = document.getElementById('stat-progress');
+  const statRated = document.getElementById('stat-rated');
+  const statPages = document.getElementById('stat-pages');
   if (statTotal) statTotal.textContent = books.length;
   if (statReading) statReading.textContent = books.filter((book) => book.status === 'reading').length;
   if (statRead) statRead.textContent = books.filter((book) => book.status === 'read').length;
   if (statProgress) statProgress.textContent = books.length ? `${Math.round(books.reduce((sum, book) => sum + book.progress, 0) / books.length)}%` : '0%';
+  if (statRated) statRated.textContent = books.filter((book) => book.rating > 0).length;
+  if (statPages) statPages.textContent = books.reduce((sum, book) => sum + (Number(book.metadata?.pageCount || book.metadata?.number_of_pages || 0) || 0), 0);
+
+  // Advanced Statistics & Goal
+  const annualGoalInput = document.getElementById('annual-goal-input');
+  const savedGoal = Number(localStorage.getItem('book_library_annual_goal')) || 12;
+  if (annualGoalInput && !annualGoalInput.dataset.initialized) {
+    annualGoalInput.value = savedGoal;
+    annualGoalInput.dataset.initialized = 'true';
+    annualGoalInput.addEventListener('change', (e) => {
+      const val = Math.max(1, Number(e.target.value) || 12);
+      localStorage.setItem('book_library_annual_goal', String(val));
+      render();
+    });
+  }
+  const currentGoal = Number(annualGoalInput ? annualGoalInput.value : savedGoal) || 12;
+  const currentYear = new Date().getFullYear();
+  const readThisYear = books.filter((b) => {
+    if (b.status !== 'read') return false;
+    if (b.finishDate) return new Date(b.finishDate).getFullYear() === currentYear;
+    return new Date(b.createdAt).getFullYear() === currentYear;
+  }).length;
+  const goalPercent = Math.min(100, Math.round((readThisYear / currentGoal) * 100));
+  const goalFill = document.getElementById('goal-progress-fill');
+  if (goalFill) goalFill.style.width = `${goalPercent}%`;
+  const goalText = document.getElementById('goal-status-text');
+  if (goalText) goalText.textContent = `Bu yıl ${readThisYear} / ${currentGoal} kitap okundu (%${goalPercent})`;
+
+  // Top Author & Top Genre
+  const authorCounts = {};
+  const genreCounts = {};
+  books.forEach((b) => {
+    if (b.author && b.author.trim()) {
+      const a = b.author.trim();
+      authorCounts[a] = (authorCounts[a] || 0) + 1;
+    }
+    (b.tags || []).forEach((t) => {
+      const cleanTag = t.trim().toLowerCase();
+      if (cleanTag && !['isbn', 'google-books', 'open-library'].includes(cleanTag)) {
+        genreCounts[cleanTag] = (genreCounts[cleanTag] || 0) + 1;
+      }
+    });
+  });
+
+  let topAuthor = '-';
+  let maxAuthorCount = 0;
+  Object.entries(authorCounts).forEach(([auth, count]) => {
+    if (count > maxAuthorCount) {
+      maxAuthorCount = count;
+      topAuthor = auth;
+    }
+  });
+
+  let topGenre = '-';
+  let maxGenreCount = 0;
+  Object.entries(genreCounts).forEach(([g, count]) => {
+    if (count > maxGenreCount) {
+      maxGenreCount = count;
+      topGenre = g.charAt(0).toUpperCase() + g.slice(1);
+    }
+  });
+
+  const topAuthorEl = document.getElementById('top-author-name');
+  const topAuthorCountEl = document.getElementById('top-author-count');
+  if (topAuthorEl) topAuthorEl.textContent = topAuthor;
+  if (topAuthorCountEl) topAuthorCountEl.textContent = `${maxAuthorCount} kitap`;
+
+  const topGenreEl = document.getElementById('top-genre-name');
+  const topGenreCountEl = document.getElementById('top-genre-count');
+  if (topGenreEl) topGenreEl.textContent = topGenre;
+  if (topGenreCountEl) topGenreCountEl.textContent = `${maxGenreCount} kitap`;
+
   const query = document.getElementById('search').value.trim().toLowerCase();
   const filter = document.getElementById('filter').value;
   const statusFilter = document.getElementById('status-filter').value;
   const ratingFilter = document.getElementById('rating-filter').value;
+  const shelfFilter = document.getElementById('shelf-filter').value;
 
   const visible = books.filter((book) => {
     if (filter === 'read' && !book.read) return false;
     if (filter === 'unread' && book.read) return false;
     if (statusFilter !== 'all' && book.status !== statusFilter) return false;
     if (ratingFilter !== 'all' && book.rating < Number(ratingFilter)) return false;
+    if (shelfFilter !== 'all' && book.shelf !== shelfFilter) return false;
     if (!query) return true;
 
     const haystack = `${book.title || ''} ${book.author || ''}`.toLowerCase();
@@ -231,20 +388,29 @@ function render() {
     const detailsEl = document.createElement('div');
     detailsEl.className = 'muted';
     const metadata = book.metadata || {};
-    const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : '';
-    const pageCount = metadata.number_of_pages || '';
+    const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : (metadata.publisher || '');
+    const pageCount = metadata.number_of_pages || metadata.pageCount || '';
     const detailParts = [
       book.author || 'Yazar bilinmiyor',
       book.year || '',
       publisher,
       pageCount ? `${pageCount} sayfa` : '',
-      book.isbn ? `ISBN: ${book.isbn}` : ''
+      book.isbn ? `ISBN: ${book.isbn}` : '',
+      book.startDate ? `Başlama: ${book.startDate}` : '',
+      book.finishDate ? `Bitiş: ${book.finishDate}` : ''
     ];
     detailsEl.textContent = detailParts.filter(Boolean).join('\n');
 
     const tagsEl = document.createElement('div');
     tagsEl.className = 'tags';
-    tagsEl.textContent = (book.tags || []).join(', ') || 'Etiket yok';
+    
+    const shelfBadge = document.createElement('span');
+    shelfBadge.className = 'shelf-badge';
+    shelfBadge.textContent = getShelfLabel(book.shelf);
+    
+    const tagsText = document.createTextNode(` ${(book.tags || []).join(', ') || 'Etiket yok'}`);
+    tagsEl.appendChild(shelfBadge);
+    tagsEl.appendChild(tagsText);
 
     meta.appendChild(titleEl);
     meta.appendChild(detailsEl);
@@ -268,34 +434,7 @@ function render() {
     const editBtn = document.createElement('button');
     editBtn.className = 'small secondary';
     editBtn.textContent = 'Düzenle';
-    editBtn.addEventListener('click', async () => {
-      const nextTitle = prompt('Başlık', book.title);
-      if (nextTitle === null) return;
-
-      const nextAuthor = prompt('Yazar', book.author);
-      if (nextAuthor === null) return;
-
-      const nextYear = prompt('Yıl', book.year);
-      if (nextYear === null) return;
-
-      const nextTags = prompt('Etiketler (virgülle ayrılmış)', (book.tags || []).join(', '));
-      if (nextTags === null) return;
-
-      const updatedBooks = loadBooks().map((item) => {
-        if (item.id !== book.id) return item;
-        return {
-          ...item,
-          title: nextTitle.trim() || 'Başlıksız',
-          author: nextAuthor.trim(),
-          year: nextYear.trim(),
-          tags: nextTags.split(',').map((part) => part.trim()).filter(Boolean)
-        };
-      });
-
-      saveBooks(updatedBooks);
-      await syncBooksToServer(updatedBooks);
-      render();
-    });
+    editBtn.addEventListener('click', () => openEditModal(book));
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'small danger';
@@ -326,7 +465,8 @@ function showBookDetail(book) {
   const metadata = book.metadata || {};
   const coverUrl = getBookCoverUrl(book);
   const description = typeof metadata.description === 'object' ? metadata.description.value : metadata.description;
-  const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : '';
+  const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : (metadata.publisher || '');
+  const pageCount = metadata.number_of_pages || metadata.pageCount || '';
   const subjects = Array.isArray(metadata.subjects) ? metadata.subjects.join(', ') : '';
 
   controls.classList.add('hidden');
@@ -363,9 +503,12 @@ function showBookDetail(book) {
     ['Okuma durumu', book.status === 'reading' ? 'Okunuyor' : book.status === 'read' ? 'Okundu' : 'Okunacak'],
     ['İlerleme', `${book.progress}%`],
     ['Puan', book.rating ? `${book.rating} / 5` : 'Puan verilmedi'],
+    ['Raf', getShelfLabel(book.shelf)],
+    ['Başlama Tarihi', book.startDate],
+    ['Bitirme Tarihi', book.finishDate],
     ['Yayın tarihi', metadata.publish_date],
     ['Yayınevi', publisher],
-    ['Sayfa sayısı', metadata.number_of_pages],
+    ['Sayfa sayısı', pageCount],
     ['Format', metadata.physical_format],
     ['Konular', subjects]
   ].filter((field) => field[1]);
@@ -378,6 +521,7 @@ function showBookDetail(book) {
     details.append(term, descriptionEl);
   });
   summary.appendChild(details);
+
 
   if (description) {
     const descriptionHeading = document.createElement('h3');
@@ -504,6 +648,62 @@ function hideBookDetail() {
   document.getElementById('book-detail').classList.add('hidden');
 }
 
+let editingBookId = null;
+
+function openEditModal(book) {
+  editingBookId = book.id;
+  document.getElementById('edit-title').value = book.title;
+  document.getElementById('edit-author').value = book.author;
+  document.getElementById('edit-year').value = book.year;
+  document.getElementById('edit-tags').value = (book.tags || []).join(', ');
+  document.getElementById('edit-status').value = book.status;
+  document.getElementById('edit-shelf').value = book.shelf || 'owned';
+  document.getElementById('edit-start-date').value = book.startDate || '';
+  document.getElementById('edit-finish-date').value = book.finishDate || '';
+  document.getElementById('edit-progress').value = book.progress;
+  document.getElementById('edit-progress-value').value = `${book.progress}%`;
+  document.getElementById('edit-rating').value = book.rating;
+  document.getElementById('edit-review').value = book.review;
+  document.getElementById('edit-notes').value = book.notes;
+  document.getElementById('edit-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('edit-title')?.focus(), 50);
+}
+
+function closeEditModal() {
+  editingBookId = null;
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+async function saveEditedBook(event) {
+  event.preventDefault();
+  const updatedBooks = loadBooks().map((book) => {
+    if (book.id !== editingBookId) return book;
+    const status = document.getElementById('edit-status').value;
+    return normalizeBook({
+      ...book,
+      title: document.getElementById('edit-title').value.trim() || 'Başlıksız',
+      author: document.getElementById('edit-author').value.trim(),
+      year: document.getElementById('edit-year').value.trim(),
+      tags: document.getElementById('edit-tags').value.split(',').map((tag) => tag.trim()).filter(Boolean),
+      status,
+      read: status === 'read',
+      progress: Number(document.getElementById('edit-progress').value),
+      rating: Number(document.getElementById('edit-rating').value),
+      review: document.getElementById('edit-review').value.trim(),
+      notes: document.getElementById('edit-notes').value.trim(),
+      shelf: document.getElementById('edit-shelf').value || 'owned',
+      startDate: document.getElementById('edit-start-date').value,
+      finishDate: document.getElementById('edit-finish-date').value
+    });
+  });
+  saveBooks(updatedBooks);
+  const result = await syncBooksToServer(updatedBooks);
+  closeEditModal();
+  render();
+  setStatus(result && result.fallback ? 'Kitap yerel olarak güncellendi; bağlantı gelince eşitlenecek.' : 'Kitap güncellendi.');
+}
+
+
 async function fetchGoogleBooksMetadata(isbn) {
   const apiKey = window.GOOGLE_BOOKS_API_KEY && !window.GOOGLE_BOOKS_API_KEY.includes('YOUR_')
     ? `&key=${encodeURIComponent(window.GOOGLE_BOOKS_API_KEY)}`
@@ -545,12 +745,29 @@ async function fetchOpenLibraryMetadata(isbn) {
   };
 }
 
+function normalizeIsbn(input) {
+  const isbn = input.replace(/[^0-9Xx]/g, '').toUpperCase();
+  if (isbn.length === 10) {
+    const valid = isbn.split('').reduce((sum, digit, index) => {
+      const value = digit === 'X' ? 10 : Number(digit);
+      return sum + value * (10 - index);
+    }, 0) % 11 === 0;
+    if (!valid) throw new Error('ISBN-10 kontrol hanesi geçersiz. Numarayı kontrol edin.');
+    return isbn;
+  }
+  if (isbn.length === 13 && /^97[89]\d{10}$/.test(isbn)) {
+    const sum = isbn.split('').reduce((total, digit, index) => total + Number(digit) * (index % 2 ? 3 : 1), 0);
+    if (sum % 10 !== 0) throw new Error('ISBN-13 kontrol hanesi geçersiz. Numarayı kontrol edin.');
+    return isbn;
+  }
+  throw new Error('ISBN 10 veya 13 haneli olmalıdır. Numarayı kontrol edin.');
+}
+
 async function fetchBookMetadata(isbnInput) {
   const cleaned = isbnInput.trim();
   if (!cleaned) throw new Error('ISBN veya barkod girin.');
 
-  const isbn = cleaned.replace(/[^0-9Xx]/g, '');
-  if (!isbn) throw new Error('Geçerli bir ISBN / barkod bulunamadı.');
+  const isbn = normalizeIsbn(cleaned);
 
   const googleBook = await fetchGoogleBooksMetadata(isbn).catch(() => null);
   if (googleBook) return googleBook;
@@ -590,6 +807,7 @@ function setup() {
   const readingStatus = document.getElementById('reading-status');
   const progress = document.getElementById('progress');
   const progressValue = document.getElementById('progress-value');
+  const shelf = document.getElementById('shelf');
   let scannerLoopToken = 0;
 
   function setScannerVisible(isVisible) {
@@ -633,6 +851,11 @@ function setup() {
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
   document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
+  document.getElementById('close-edit-modal').addEventListener('click', closeEditModal);
+  document.getElementById('edit-form').addEventListener('submit', saveEditedBook);
+  document.getElementById('edit-progress').addEventListener('input', (event) => {
+    document.getElementById('edit-progress-value').value = `${event.target.value}%`;
+  });
   const coverModal = document.getElementById('cover-modal');
   document.getElementById('close-cover-modal').addEventListener('click', closeCoverModal);
   coverModal.addEventListener('click', (event) => {
@@ -648,8 +871,9 @@ function setup() {
 
   async function saveFetchedBook(book) {
     const books = loadBooks();
-    if (books.some((item) => item.isbn === book.isbn)) {
-      setStatus('Bu ISBN zaten kütüphanede kayıtlı.');
+    const duplicate = findDuplicateBook(book, books);
+    if (duplicate) {
+      setStatus(`Bu kitap zaten kütüphanede kayıtlı ("${duplicate.title}").`, true);
       return false;
     }
     books.unshift(createBook({
@@ -659,7 +883,10 @@ function setup() {
       progress: Number(progress.value),
       rating: Number(document.getElementById('rating').value),
       review: document.getElementById('review').value.trim(),
-      notes: document.getElementById('notes').value.trim()
+      notes: document.getElementById('notes').value.trim(),
+      shelf: shelf.value,
+      startDate: document.getElementById('start-date').value,
+      finishDate: document.getElementById('finish-date').value
     }));
     saveBooks(books);
     await syncBooksToServer(books);
@@ -673,7 +900,7 @@ function setup() {
       const result = await fetchBookMetadata(isbnInput.value);
       applyBookToForm(result);
       const saved = await saveFetchedBook(result);
-      setStatus(saved ? 'Kitap ISBN ile kütüphaneye eklendi.' : 'Bu ISBN zaten kütüphanede kayıtlı.');
+      if (saved) setStatus('Kitap ISBN ile kütüphaneye eklendi.');
     } catch (error) {
       setStatus(error.message, true);
       showLookupError(isbnInput.value.replace(/[^0-9Xx]/g, ''), error.message);
@@ -694,7 +921,7 @@ function setup() {
     stopScanner();
     const book = await fetchBookMetadata(cleaned);
     const saved = await saveFetchedBook(book);
-    setStatus(saved ? `${source} ile kitap kütüphaneye eklendi.` : 'Bu ISBN zaten kütüphanede kayıtlı.');
+    if (saved) setStatus(`${source} ile kitap kütüphaneye eklendi.`);
   }
 
   async function openScanner() {
@@ -906,6 +1133,12 @@ function setup() {
     }
 
     const books = loadBooks();
+    const duplicate = findDuplicateBook({ title, author, isbn }, books);
+    if (duplicate) {
+      setStatus(`Bu kitap zaten kütüphanede kayıtlı ("${duplicate.title}").`, true);
+      return;
+    }
+
     books.unshift(createBook({
       title,
       author,
@@ -917,6 +1150,9 @@ function setup() {
       rating: Number(document.getElementById('rating').value),
       review: document.getElementById('review').value.trim(),
       notes: document.getElementById('notes').value.trim(),
+      shelf: shelf.value,
+      startDate: document.getElementById('start-date').value,
+      finishDate: document.getElementById('finish-date').value,
       isbn,
       metadata
     }));
@@ -927,10 +1163,12 @@ function setup() {
     render();
   });
 
+
   document.getElementById('search').addEventListener('input', render);
   document.getElementById('filter').addEventListener('change', render);
   document.getElementById('status-filter').addEventListener('change', render);
   document.getElementById('rating-filter').addEventListener('change', render);
+  document.getElementById('shelf-filter').addEventListener('change', render);
   progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
   readingStatus.addEventListener('change', () => {
     if (readingStatus.value === 'read') progress.value = 100;
@@ -1082,7 +1320,10 @@ async function initializeApp() {
     activeUser = session.user;
     authGate.style.display = 'none';
     app.style.display = 'block';
-    const books = await fetchAllBooksFromServer();
+    const pendingKey = `${PENDING_SYNC_KEY}_${activeUser.id}`;
+    const hasPending = Boolean(localStorage.getItem(pendingKey));
+    await flushPendingSync();
+    const books = hasPending && localStorage.getItem(pendingKey) ? loadBooks() : await fetchAllBooksFromServer();
     saveBooks(books);
     if (!appInitialized) {
       setup();

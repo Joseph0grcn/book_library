@@ -92,8 +92,22 @@
             <option value="4">4 / 5</option>
             <option value="5">5 / 5</option>
           </select>
+          <select id="shelf" aria-label="Raf">
+            <option value="owned">Sahip olduklarım</option>
+            <option value="wishlist">Okuma listem</option>
+            <option value="favorites">Favorilerim</option>
+            <option value="reread">Tekrar okunacaklar</option>
+          </select>
         </div>
         <div class="personal-fields">
+          <label class="field-label">
+            <span>Başlama Tarihi</span>
+            <input id="start-date" type="date" aria-label="Okumaya başlama tarihi" />
+          </label>
+          <label class="field-label">
+            <span>Bitiş Tarihi</span>
+            <input id="finish-date" type="date" aria-label="Okumayı bitirme tarihi" />
+          </label>
           <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
           <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı)"></textarea>
         </div>
@@ -121,6 +135,13 @@
             <option value="4">4+ puan</option>
             <option value="3">3+ puan</option>
           </select>
+          <select id="shelf-filter" aria-label="Raf filtresi">
+            <option value="all">Tüm raflar</option>
+            <option value="owned">Sahip olduklarım</option>
+            <option value="wishlist">Okuma listem</option>
+            <option value="favorites">Favorilerim</option>
+            <option value="reread">Tekrar okunacaklar</option>
+          </select>
         </div>
         <button type="button" id="actions-menu-toggle" class="secondary actions-menu-toggle" aria-expanded="false">...</button>
         <div id="actions-menu" class="filter-menu actions-menu">
@@ -140,10 +161,41 @@
     </section>
 
     <section id="dashboard-stats" class="dashboard-stats" aria-label="Kütüphane istatistikleri">
-      <div><strong id="stat-total">0</strong><span>Toplam</span></div>
-      <div><strong id="stat-reading">0</strong><span>Okunuyor</span></div>
-      <div><strong id="stat-read">0</strong><span>Okundu</span></div>
-      <div><strong id="stat-progress">0%</strong><span>Ortalama ilerleme</span></div>
+      <div class="stats-summary-grid">
+        <div><strong id="stat-total">0</strong><span>Toplam Kitap</span></div>
+        <div><strong id="stat-reading">0</strong><span>Okunuyor</span></div>
+        <div><strong id="stat-read">0</strong><span>Okundu</span></div>
+        <div><strong id="stat-progress">0%</strong><span>Ortalama İlerleme</span></div>
+        <div><strong id="stat-rated">0</strong><span>Puanlanan</span></div>
+        <div><strong id="stat-pages">0</strong><span>Toplam Sayfa</span></div>
+      </div>
+
+      <div class="stats-annual-goal card-widget">
+        <div class="widget-header">
+          <strong>Yıllık Okuma Hedefi</strong>
+          <div class="goal-input-wrap">
+            <label for="annual-goal-input">Hedef:</label>
+            <input id="annual-goal-input" type="number" min="1" max="500" value="12" />
+          </div>
+        </div>
+        <div class="goal-progress-bar">
+          <div id="goal-progress-fill" class="goal-progress-fill" style="width: 0%;"></div>
+        </div>
+        <p id="goal-status-text" class="widget-subtext">Bu yıl 0 / 12 kitap okundu (%0)</p>
+      </div>
+
+      <div class="stats-insights-grid">
+        <div class="card-widget">
+          <span class="widget-label">EN ÇOK OKUNAN YAZAR</span>
+          <strong id="top-author-name" class="insight-value">-</strong>
+          <span id="top-author-count" class="widget-subtext">0 kitap</span>
+        </div>
+        <div class="card-widget">
+          <span class="widget-label">EN ÇOK OKUNAN TÜR / ETİKET</span>
+          <strong id="top-genre-name" class="insight-value">-</strong>
+          <span id="top-genre-count" class="widget-subtext">0 kitap</span>
+        </div>
+      </div>
     </section>
 
     <div id="scanner-modal" class="scanner-modal hidden">
@@ -187,6 +239,52 @@
           <button type="button" id="close-cover-modal" class="secondary small">Kapat</button>
         </div>
         <img id="large-cover" class="large-cover" alt="Büyük kitap kapağı" />
+      </div>
+    </div>
+
+    <div id="edit-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+      <div class="edit-window">
+        <div class="scanner-header">
+          <strong id="edit-modal-title">Kitabı düzenle</strong>
+          <button type="button" id="close-edit-modal" class="secondary small">Kapat</button>
+        </div>
+        <form id="edit-form" class="edit-form">
+          <label class="field-label"><span>Başlık *</span><input id="edit-title" type="text" placeholder="Başlık" required /></label>
+          <label class="field-label"><span>Yazar</span><input id="edit-author" type="text" placeholder="Yazar" /></label>
+          <label class="field-label"><span>Yayın yılı</span><input id="edit-year" type="text" placeholder="Yayın yılı" /></label>
+          <label class="field-label"><span>Etiketler (virgülle ayrılmış)</span><input id="edit-tags" type="text" placeholder="Etiketler" /></label>
+          <label class="field-label"><span>Okuma durumu</span>
+            <select id="edit-status">
+              <option value="unread">Okunacak</option>
+              <option value="reading">Okunuyor</option>
+              <option value="read">Okundu</option>
+            </select>
+          </label>
+          <label class="field-label"><span>Raf</span>
+            <select id="edit-shelf">
+              <option value="owned">Sahip olduklarım</option>
+              <option value="wishlist">Okuma listem</option>
+              <option value="favorites">Favorilerim</option>
+              <option value="reread">Tekrar okunacaklar</option>
+            </select>
+          </label>
+          <label class="field-label"><span>Okumaya Başlama Tarihi</span><input id="edit-start-date" type="date" /></label>
+          <label class="field-label"><span>Bitirme Tarihi</span><input id="edit-finish-date" type="date" /></label>
+          <label class="progress-control"><span>İlerleme <output id="edit-progress-value">0%</output></span><input id="edit-progress" type="range" min="0" max="100" step="5" value="0" /></label>
+          <label class="field-label"><span>Puan</span>
+            <select id="edit-rating">
+              <option value="0">Puan yok</option>
+              <option value="1">1 / 5</option>
+              <option value="2">2 / 5</option>
+              <option value="3">3 / 5</option>
+              <option value="4">4 / 5</option>
+              <option value="5">5 / 5</option>
+            </select>
+          </label>
+          <label class="field-label"><span>Kısa Yorum</span><textarea id="edit-review" placeholder="Kısa yorum"></textarea></label>
+          <label class="field-label"><span>Notlar ve Alıntılar</span><textarea id="edit-notes" placeholder="Notlar ve alıntılar"></textarea></label>
+          <button type="submit">Değişiklikleri kaydet</button>
+        </form>
       </div>
     </div>
 

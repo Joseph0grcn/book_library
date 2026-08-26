@@ -18,38 +18,12 @@ function writeDb(data) {
 }
 
 exports.handler = async function(event, context) {
-  const method = event.httpMethod || 'GET';
-
-  if (method === 'GET') {
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify(readDb())
-    };
-  }
-
-  if (method === 'POST') {
-    try {
-      const payload = JSON.parse(event.body || '[]');
-      const books = Array.isArray(payload) ? payload : [];
-      writeDb(books);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        body: JSON.stringify({ ok: true, count: books.length })
-      };
-    } catch (error) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        body: JSON.stringify({ error: 'Geçersiz JSON' })
-      };
-    }
-  }
-
   return {
-    statusCode: 405,
+    statusCode: 403,
     headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-    body: JSON.stringify({ error: 'Method not allowed' })
+    body: JSON.stringify({
+      error: 'Bu uç nokta güvenlik nedeniyle kapatılmıştır. Lütfen verilerinize erişmek için Supabase oturumu açın.'
+    })
   };
 };
+

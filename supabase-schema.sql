@@ -11,6 +11,7 @@ create table if not exists public.books (
   rating integer not null default 0 check (rating between 0 and 5),
   review text default '',
   notes text default '',
+  shelf text not null default 'owned',
   isbn text default '',
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
@@ -32,3 +33,8 @@ create policy "Users can delete their own books" on public.books for delete usin
 
 create index if not exists books_user_id_idx on public.books(user_id);
 create index if not exists books_user_isbn_idx on public.books(user_id, isbn);
+
+alter table public.books add column if not exists start_date text default '';
+alter table public.books add column if not exists finish_date text default '';
+alter table public.books add column if not exists shelf text not null default 'owned';
+
