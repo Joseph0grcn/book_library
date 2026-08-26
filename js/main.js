@@ -583,6 +583,10 @@ async function initializeApp() {
   const detail = document.getElementById('book-detail');
 
   const setPage = (page) => {
+    // Detail view temporarily adds `hidden`; clear that transient state whenever a tab changes.
+    controls.classList.remove('hidden');
+    list.classList.remove('hidden');
+    detail.classList.add('hidden', 'page-hidden');
     controls.classList.toggle('page-hidden', page === 'stats' || page === 'quotes');
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
@@ -590,8 +594,6 @@ async function initializeApp() {
     stats.classList.toggle('page-hidden', page !== 'stats');
     if (quotesSection) quotesSection.classList.toggle('page-hidden', page !== 'quotes');
     list.classList.toggle('page-hidden', page !== 'library');
-    detail.classList.add('page-hidden');
-
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
     });
