@@ -315,6 +315,8 @@ function showBookDetail(book) {
     cover.alt = `${book.title} kapak görseli`;
     cover.loading = 'lazy';
     cover.referrerPolicy = 'no-referrer';
+    cover.title = 'Büyütmek için tıklayın';
+    cover.addEventListener('click', () => openCoverModal(coverUrl, book.title));
     cover.addEventListener('error', () => {
       cover.remove();
     }, { once: true });
@@ -386,6 +388,21 @@ function showBookDetail(book) {
   });
   content.appendChild(metadataGrid);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openCoverModal(coverUrl, title) {
+  const modal = document.getElementById('cover-modal');
+  const image = document.getElementById('large-cover');
+  document.getElementById('cover-modal-title').textContent = title;
+  image.src = coverUrl;
+  image.alt = `${title} büyük kapak görseli`;
+  modal.classList.remove('hidden');
+}
+
+function closeCoverModal() {
+  const modal = document.getElementById('cover-modal');
+  document.getElementById('large-cover').removeAttribute('src');
+  modal.classList.add('hidden');
 }
 
 function getBookCoverUrl(book) {
@@ -586,6 +603,14 @@ function setup() {
   modeManual.addEventListener('click', () => setMode('manual'));
   modeIsbn.addEventListener('click', () => setMode('isbn'));
   document.getElementById('back-to-library').addEventListener('click', hideBookDetail);
+  const coverModal = document.getElementById('cover-modal');
+  document.getElementById('close-cover-modal').addEventListener('click', closeCoverModal);
+  coverModal.addEventListener('click', (event) => {
+    if (event.target === coverModal) closeCoverModal();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeCoverModal();
+  });
   document.getElementById('close-lookup-error').addEventListener('click', () => lookupErrorModal.classList.add('hidden'));
   lookupErrorModal.addEventListener('click', (event) => {
     if (event.target === lookupErrorModal) lookupErrorModal.classList.add('hidden');

@@ -413,6 +413,42 @@ button.danger:hover {
   border-radius: 8px;
 }
 
+.cover-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.cover-modal.hidden {
+  display: none;
+}
+
+.cover-lightbox {
+  width: min(92vw, 680px);
+  max-height: 92vh;
+  overflow: hidden;
+  background: white;
+  border-radius: 14px;
+}
+
+.large-cover {
+  display: block;
+  width: 100%;
+  height: min(78vh, 760px);
+  object-fit: contain;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.book-cover {
+  cursor: zoom-in;
+}
+
 .scanner-header {
   display: flex;
   justify-content: space-between;
