@@ -40,7 +40,7 @@ export function saveBooks(books) {
 
 export function createBook(bookData) {
   return normalizeBook({
-    id: uid(),
+    id: bookData.id || uid(),
     title: bookData.title || 'Başlıksız',
     author: bookData.author || '',
     year: bookData.year || '',
@@ -60,8 +60,12 @@ export function createBook(bookData) {
   });
 }
 
-export function queuePendingSync(books) {
-  localStorage.setItem(`${PENDING_SYNC_KEY}_${activeUser?.id || 'local'}`, JSON.stringify(books));
+export function queuePendingSync(books, options = {}) {
+  localStorage.setItem(`${PENDING_SYNC_KEY}_${activeUser?.id || 'local'}`, JSON.stringify({
+    version: 1,
+    allowDelete: !!options.allowDelete,
+    books
+  }));
 }
 
 export async function flushPendingSync() {
@@ -70,8 +74,14 @@ export async function flushPendingSync() {
   const raw = localStorage.getItem(key);
   if (!raw) return;
   try {
-    const books = JSON.parse(raw);
-    const result = await syncBooksToServer(books);
+    const parsed = JSON.parse(raw);
+    const isLegacyQueue = Array.isArray(parsed);
+    const books = isLegacyQueue ? parsed : parsed.books;
+    if (!Array.isArray(books)) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const result = await syncBooksToServer(books, { allowDelete: !isLegacyQueue && !!parsed.allowDelete });
     if (!result?.fallback) localStorage.removeItem(key);
   } catch (error) {}
 }
@@ -88,7 +98,9 @@ export async function fetchAllBooksFromServer() {
   return loadBooks();
 }
 
-export async function syncBooksToServer(books) {
+export async function syncBooksToServer(books, options = {}) {
+  const allowDelete = !!options.allowDelete;
+
   if (supabaseClient && activeUser) {
     const rows = books.map((book) => ({
       id: book.id,
@@ -110,23 +122,46 @@ export async function syncBooksToServer(books) {
       metadata: book.metadata,
       created_at: new Date(book.createdAt).toISOString()
     }));
-    const { data, error } = await supabaseClient.from('books').upsert(rows).select();
-    if (!error) {
-      const ids = books.map((book) => book.id);
-      if (ids.length) {
-        await supabaseClient.from('books').delete().eq('user_id', activeUser.id).not('id', 'in', `(${ids.join(',')})`);
-      } else {
-        await supabaseClient.from('books').delete().eq('user_id', activeUser.id);
+    let data = [];
+    if (rows.length) {
+      const { data: upsertedRows, error } = await supabaseClient.from('books').upsert(rows).select();
+      if (error) {
+        saveBooks(books);
+        queuePendingSync(books, { allowDelete });
+        return { fallback: true };
       }
-      return data;
+      data = upsertedRows;
     }
-    saveBooks(books);
-    queuePendingSync(books);
-    return { fallback: true };
+
+    if (allowDelete) {
+      const ids = books.map((book) => book.id);
+      let deleteResult;
+      if (ids.length) {
+        deleteResult = await supabaseClient
+          .from('books')
+          .delete()
+          .eq('user_id', activeUser.id)
+          .not('id', 'in', `(${ids.map(formatPostgrestInValue).join(',')})`);
+      } else {
+        deleteResult = await supabaseClient.from('books').delete().eq('user_id', activeUser.id);
+      }
+
+      if (deleteResult?.error) {
+        saveBooks(books);
+        queuePendingSync(books, { allowDelete });
+        return { fallback: true };
+      }
+    }
+
+    return data;
   }
   saveBooks(books);
-  queuePendingSync(books);
+  queuePendingSync(books, { allowDelete });
   return { fallback: true };
+}
+
+function formatPostgrestInValue(value) {
+  return JSON.stringify(String(value));
 }
 
 let realtimeChannel = null;

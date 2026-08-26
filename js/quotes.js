@@ -9,7 +9,7 @@ export function parseMarkdown(text) {
     .replace(/>/g, '&gt;');
 
   // Blockquotes (> text)
-  html = html.replace(/^&gt;\s?(.*)$/gmol, '<blockquote>$1</blockquote>');
+  html = html.replace(/^&gt;\s?(.*)$/gm, '<blockquote>$1</blockquote>');
   
   // Bold (**text**)
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');

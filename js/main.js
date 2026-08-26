@@ -500,6 +500,18 @@ function setup() {
     showToast(`Yedek alındı. ${books.length} kitap kaydedildi.`, 'success');
   });
 
+  document.getElementById('save-db').addEventListener('click', () => {
+    const books = loadBooks();
+    const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'db.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast(`db.json indirildi. ${books.length} kitap kaydedildi.`, 'success');
+  });
+
   document.getElementById('import').addEventListener('click', () => {
     document.getElementById('import-file').click();
   });
@@ -531,7 +543,7 @@ function setup() {
   document.getElementById('clear').addEventListener('click', async () => {
     if (!confirm('Tüm kitapları silmek istediğinize emin misiniz?')) return;
     localStorage.removeItem(getUserStorageKey());
-    await syncBooksToServer([]);
+    await syncBooksToServer([], { allowDelete: true });
     render();
     showToast('Tüm kitap kayıtları silindi.', 'info');
   });

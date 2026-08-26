@@ -305,7 +305,7 @@ export function render() {
       if (!confirm('Bu kitabı silmek istediğinize emin misiniz?')) return;
       const updatedBooks = loadBooks().filter((item) => item.id !== book.id);
       saveBooks(updatedBooks);
-      await syncBooksToServer(updatedBooks);
+      await syncBooksToServer(updatedBooks, { allowDelete: true });
       render();
       showToast('Kitap silindi.', 'info');
     });
