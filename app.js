@@ -13,6 +13,11 @@ function normalizeBook(rawBook) {
     year: rawBook.year || '',
     tags: Array.isArray(rawBook.tags) ? rawBook.tags : [],
     read: !!rawBook.read,
+    status: rawBook.status || (rawBook.read ? 'read' : 'unread'),
+    progress: Number.isFinite(Number(rawBook.progress)) ? Number(rawBook.progress) : (rawBook.read ? 100 : 0),
+    rating: Number.isFinite(Number(rawBook.rating)) ? Number(rawBook.rating) : 0,
+    review: rawBook.review || '',
+    notes: rawBook.notes || '',
     isbn: rawBook.isbn || '',
     metadata: rawBook.metadata && typeof rawBook.metadata === 'object' ? rawBook.metadata : {},
     createdAt: rawBook.createdAt || Date.now()
@@ -34,7 +39,7 @@ function saveBooks(books) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
 }
 
-function createBook({ title, author, year, tags, read, isbn, metadata }) {
+function createBook({ title, author, year, tags, read, status, progress, rating, review, notes, isbn, metadata }) {
   return normalizeBook({
     id: uid(),
     title: title || 'Başlıksız',
@@ -42,6 +47,11 @@ function createBook({ title, author, year, tags, read, isbn, metadata }) {
     year: year || '',
     tags: Array.isArray(tags) ? tags : [],
     read: !!read,
+    status: status || (read ? 'read' : 'unread'),
+    progress: progress || 0,
+    rating: rating || 0,
+    review: review || '',
+    notes: notes || '',
     isbn: isbn || '',
     metadata: metadata || {},
     createdAt: Date.now()
@@ -87,12 +97,22 @@ function render() {
   const books = loadBooks();
   const bookCount = document.getElementById('book-count');
   if (bookCount) bookCount.textContent = books.length;
+  const statReading = document.getElementById('stat-reading');
+  const statRead = document.getElementById('stat-read');
+  const statProgress = document.getElementById('stat-progress');
+  if (statReading) statReading.textContent = books.filter((book) => book.status === 'reading').length;
+  if (statRead) statRead.textContent = books.filter((book) => book.status === 'read').length;
+  if (statProgress) statProgress.textContent = books.length ? `${Math.round(books.reduce((sum, book) => sum + book.progress, 0) / books.length)}%` : '0%';
   const query = document.getElementById('search').value.trim().toLowerCase();
   const filter = document.getElementById('filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const ratingFilter = document.getElementById('rating-filter').value;
 
   const visible = books.filter((book) => {
     if (filter === 'read' && !book.read) return false;
     if (filter === 'unread' && book.read) return false;
+    if (statusFilter !== 'all' && book.status !== statusFilter) return false;
+    if (ratingFilter !== 'all' && book.rating < Number(ratingFilter)) return false;
     if (!query) return true;
 
     const haystack = `${book.title || ''} ${book.author || ''}`.toLowerCase();
@@ -156,7 +176,8 @@ function render() {
     toggleBtn.className = 'small';
     toggleBtn.textContent = book.read ? 'Okundu' : 'Okunmadı';
     toggleBtn.addEventListener('click', async () => {
-      const updatedBooks = loadBooks().map((item) => item.id === book.id ? { ...item, read: !item.read } : item);
+      const nextRead = !book.read;
+      const updatedBooks = loadBooks().map((item) => item.id === book.id ? { ...item, read: nextRead, status: nextRead ? 'read' : 'unread', progress: nextRead ? 100 : item.progress } : item);
       saveBooks(updatedBooks);
       await syncBooksToServer(updatedBooks);
       render();
@@ -251,6 +272,9 @@ function showBookDetail(book) {
   const fields = [
     ['Yazar', book.author || 'Yazar bilinmiyor'],
     ['ISBN', book.isbn],
+    ['Okuma durumu', book.status === 'reading' ? 'Okunuyor' : book.status === 'read' ? 'Okundu' : 'Okunacak'],
+    ['İlerleme', `${book.progress}%`],
+    ['Puan', book.rating ? `${book.rating} / 5` : 'Puan verilmedi'],
     ['Yayın tarihi', metadata.publish_date],
     ['Yayınevi', publisher],
     ['Sayfa sayısı', metadata.number_of_pages],
@@ -274,6 +298,14 @@ function showBookDetail(book) {
     descriptionEl.className = 'book-description';
     descriptionEl.textContent = description;
     summary.append(descriptionHeading, descriptionEl);
+  }
+  if (book.review || book.notes) {
+    const personalHeading = document.createElement('h3');
+    personalHeading.textContent = 'Kişisel notlar';
+    const personal = document.createElement('p');
+    personal.className = 'book-description';
+    personal.textContent = [book.review ? `Yorum: ${book.review}` : '', book.notes ? `Notlar: ${book.notes}` : ''].filter(Boolean).join('\n\n');
+    summary.append(personalHeading, personal);
   }
   layout.appendChild(summary);
   content.appendChild(layout);
@@ -425,6 +457,9 @@ function setup() {
   const readPrintedIsbn = document.getElementById('read-printed-isbn');
   const scanBarcode = document.getElementById('scan-barcode');
   const scanPrintedIsbn = document.getElementById('scan-printed-isbn');
+  const readingStatus = document.getElementById('reading-status');
+  const progress = document.getElementById('progress');
+  const progressValue = document.getElementById('progress-value');
   let scannerLoopToken = 0;
 
   function setScannerVisible(isVisible) {
@@ -475,7 +510,15 @@ function setup() {
       setStatus('Bu ISBN zaten kütüphanede kayıtlı.');
       return false;
     }
-    books.unshift(createBook({ ...book, read: document.getElementById('read').checked }));
+    books.unshift(createBook({
+      ...book,
+      read: document.getElementById('read').checked,
+      status: readingStatus.value,
+      progress: Number(progress.value),
+      rating: Number(document.getElementById('rating').value),
+      review: document.getElementById('review').value.trim(),
+      notes: document.getElementById('notes').value.trim()
+    }));
     saveBooks(books);
     await syncBooksToServer(books);
     render();
@@ -718,6 +761,11 @@ function setup() {
       year,
       tags,
       read: document.getElementById('read').checked,
+      status: readingStatus.value,
+      progress: Number(progress.value),
+      rating: Number(document.getElementById('rating').value),
+      review: document.getElementById('review').value.trim(),
+      notes: document.getElementById('notes').value.trim(),
       isbn,
       metadata
     }));
@@ -730,6 +778,14 @@ function setup() {
 
   document.getElementById('search').addEventListener('input', render);
   document.getElementById('filter').addEventListener('change', render);
+  document.getElementById('status-filter').addEventListener('change', render);
+  document.getElementById('rating-filter').addEventListener('change', render);
+  progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
+  readingStatus.addEventListener('change', () => {
+    document.getElementById('read').checked = readingStatus.value === 'read';
+    if (readingStatus.value === 'read') progress.value = 100;
+    progressValue.value = `${progress.value}%`;
+  });
 
   document.getElementById('export').addEventListener('click', () => {
     const books = loadBooks();
@@ -744,6 +800,17 @@ function setup() {
   });
 
   document.getElementById('save-db').addEventListener('click', saveDbFile);
+  document.getElementById('backup').addEventListener('click', () => {
+    const books = loadBooks();
+    const blob = new Blob([JSON.stringify({ version: 1, createdAt: new Date().toISOString(), books }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `kitap-kutuphanesi-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setStatus(`Yedek alındı. ${books.length} kitap kaydedildi.`);
+  });
 
   document.getElementById('import').addEventListener('click', () => {
     document.getElementById('import-file').click();
@@ -755,7 +822,8 @@ function setup() {
 
     try {
       const text = await file.text();
-      const incoming = JSON.parse(text);
+      const parsed = JSON.parse(text);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.books;
       if (!Array.isArray(incoming)) throw new Error('Geçersiz JSON formatı.');
 
       const existing = loadBooks();

@@ -46,6 +46,25 @@
           <input id="read" type="checkbox" />
           <span>Okudum</span>
         </label>
+        <select id="reading-status" aria-label="Okuma durumu">
+          <option value="unread">Okunacak</option>
+          <option value="reading">Okunuyor</option>
+          <option value="read">Okundu</option>
+        </select>
+        <label class="progress-control">
+          <span>İlerleme <output id="progress-value">0%</output></span>
+          <input id="progress" type="range" min="0" max="100" step="5" value="0" />
+        </label>
+        <select id="rating" aria-label="Kitap puanı">
+          <option value="0">Puan yok</option>
+          <option value="1">1 / 5</option>
+          <option value="2">2 / 5</option>
+          <option value="3">3 / 5</option>
+          <option value="4">4 / 5</option>
+          <option value="5">5 / 5</option>
+        </select>
+        <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
+        <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı)"></textarea>
         <button type="submit" id="save-book">Kitabı Kaydet</button>
       </form>
 
@@ -56,6 +75,19 @@
           <option value="read">Okunanlar</option>
           <option value="unread">Okunmayanlar</option>
         </select>
+        <select id="status-filter" aria-label="Okuma durumu filtresi">
+          <option value="all">Tüm durumlar</option>
+          <option value="unread">Okunacak</option>
+          <option value="reading">Okunuyor</option>
+          <option value="read">Okundu</option>
+        </select>
+        <select id="rating-filter" aria-label="Puan filtresi">
+          <option value="all">Tüm puanlar</option>
+          <option value="5">5 puan</option>
+          <option value="4">4+ puan</option>
+          <option value="3">3+ puan</option>
+        </select>
+        <button id="backup" class="secondary">Yedek Al</button>
         <button id="export" class="secondary">JSON Dışa Aktar</button>
         <button id="save-db" class="secondary">db.json Olarak Kaydet</button>
         <input id="import-file" type="file" accept="application/json" hidden />
@@ -67,6 +99,13 @@
     <section id="book-detail" class="book-detail hidden">
       <button type="button" id="back-to-library" class="secondary">Kütüphaneye dön</button>
       <div id="book-detail-content"></div>
+    </section>
+
+    <section class="dashboard-stats" aria-label="Kütüphane istatistikleri">
+      <div><strong id="stat-total">0</strong><span>Toplam</span></div>
+      <div><strong id="stat-reading">0</strong><span>Okunuyor</span></div>
+      <div><strong id="stat-read">0</strong><span>Okundu</span></div>
+      <div><strong id="stat-progress">0%</strong><span>Ortalama ilerleme</span></div>
     </section>
 
     <div id="scanner-modal" class="scanner-modal hidden">

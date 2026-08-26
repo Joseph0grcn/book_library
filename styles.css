@@ -141,17 +141,57 @@ h1 {
 #book-form input,
 #search,
 #filter,
+#status-filter,
+#rating-filter,
+#book-form textarea,
 button {
   font-size: 0.96rem;
 }
 
 #book-form input,
 #search,
-#filter {
+#filter,
+#status-filter,
+#rating-filter,
+#book-form textarea {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   min-width: 140px;
+}
+
+#book-form textarea {
+  flex: 1 1 220px;
+  min-height: 44px;
+  resize: vertical;
+}
+
+#reading-status,
+#rating {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: white;
+}
+
+.progress-control {
+  display: flex;
+  flex: 1 1 190px;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.progress-control span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-control input {
+  width: 100%;
+  accent-color: var(--primary);
 }
 
 #title {
@@ -218,6 +258,39 @@ button.danger:hover {
 
 #filter {
   flex: 1 1 140px;
+}
+
+#status-filter,
+#rating-filter {
+  flex: 1 1 150px;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.dashboard-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.dashboard-stats strong {
+  color: var(--primary);
+  font-family: Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.dashboard-stats span {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .list {
@@ -423,8 +496,15 @@ button.danger:hover {
 
   #search,
   #filter,
+  #status-filter,
+  #rating-filter,
   #book-form input,
+  #book-form textarea,
   button {
     width: 100%;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
