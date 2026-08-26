@@ -746,6 +746,22 @@ button.danger:hover {
   .card {
     flex-direction: column;
     align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .card .meta,
+  .card .actions {
+    width: 100%;
+  }
+
+  .card .actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card .actions button {
+    width: 100%;
   }
 
   .book-detail-content {
