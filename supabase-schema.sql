@@ -6,6 +6,36 @@
 -- 1. Mevcut tabloyu ve bağlı izinleri tamamen temizler (Sıfırlama)
 drop table if exists public.books cascade;
 
+drop table if exists public.profiles cascade;
+
+create table public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null default '',
+  username text not null default '',
+  bio text not null default '',
+  location text not null default '',
+  website text not null default '',
+  avatar_url text not null default '',
+  cover_url text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+create policy "Users can view their own profile"
+  on public.profiles for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own profile"
+  on public.profiles for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own profile"
+  on public.profiles for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- 2. Kitaplar tablosunu tüm güncel sütunlarıyla yeniden oluşturur
 create table public.books (
   id text primary key,

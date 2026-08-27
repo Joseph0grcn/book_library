@@ -1,4 +1,4 @@
-import { STORAGE_KEY, PENDING_SYNC_KEY, SYNC_STATE_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
+import { STORAGE_KEY, PROFILE_KEY, PENDING_SYNC_KEY, SYNC_STATE_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
 import { showToast } from '../ui/toast.js';
 
 export function normalizeBook(rawBook = {}) {
@@ -90,6 +90,65 @@ export function queuePendingSync(books, options = {}) {
     allowDelete: !!options.allowDelete,
     books
   }));
+}
+
+export function normalizeProfile(rawProfile = {}) {
+  return {
+    id: rawProfile.id || activeUser?.id || 'local-profile',
+    userId: rawProfile.userId || rawProfile.user_id || activeUser?.id || '',
+    displayName: String(rawProfile.displayName || rawProfile.display_name || '').trim(),
+    username: String(rawProfile.username || '').trim().replace(/\s+/g, '').slice(0, 30),
+    bio: String(rawProfile.bio || '').trim().slice(0, 500),
+    location: String(rawProfile.location || '').trim().slice(0, 100),
+    website: String(rawProfile.website || '').trim().slice(0, 200),
+    avatarUrl: String(rawProfile.avatarUrl || rawProfile.avatar_url || '').trim().slice(0, 500),
+    coverUrl: String(rawProfile.coverUrl || rawProfile.cover_url || '').trim().slice(0, 500),
+    createdAt: validTimestamp(rawProfile.createdAt || rawProfile.created_at) || Date.now(),
+    updatedAt: validTimestamp(rawProfile.updatedAt || rawProfile.updated_at) || Date.now()
+  };
+}
+
+export function loadProfile() {
+  try {
+    const raw = localStorage.getItem(getUserStorageKey(PROFILE_KEY));
+    return normalizeProfile(raw ? JSON.parse(raw) : {});
+  } catch (error) {
+    console.error('Profil okunurken hata oluştu:', error);
+    return normalizeProfile();
+  }
+}
+
+export function saveProfile(profile) {
+  const normalized = normalizeProfile(profile);
+  localStorage.setItem(getUserStorageKey(PROFILE_KEY), JSON.stringify(normalized));
+  return normalized;
+}
+
+export async function fetchProfileFromServer() {
+  if (!supabaseClient || !activeUser) return loadProfile();
+  const { data, error } = await supabaseClient.from('profiles').select('*').eq('user_id', activeUser.id).maybeSingle();
+  if (error) throw error;
+  return data ? normalizeProfile(data) : loadProfile();
+}
+
+export async function syncProfileToServer(profile) {
+  const normalized = saveProfile(profile);
+  if (!supabaseClient || !activeUser) return { fallback: true, profile: normalized };
+
+  const { data, error } = await supabaseClient.from('profiles').upsert({
+    user_id: activeUser.id,
+    display_name: normalized.displayName,
+    username: normalized.username,
+    bio: normalized.bio,
+    location: normalized.location,
+    website: normalized.website,
+    avatar_url: normalized.avatarUrl,
+    cover_url: normalized.coverUrl,
+    updated_at: new Date(normalized.updatedAt).toISOString()
+  }, { onConflict: 'user_id' }).select().single();
+
+  if (error) throw error;
+  return { profile: normalizeProfile(data) };
 }
 
 export function getSyncState() {

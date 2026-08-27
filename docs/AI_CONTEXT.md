@@ -21,7 +21,7 @@ Kitap Kütüphanem, build adımı olmayan, tarayıcıda çalışan bir PWA'dır.
 - `tests/`: Node.js yerleşik testleri; ISBN ve kitap veri sözleşmesinin temel senaryoları.
 - `scripts/check.mjs`: Build gerektirmeyen statik proje doğrulamaları.
 - `package.json`, `eslint.config.js`, `.prettierrc.json`: Geliştirme komutları ve kalite kuralları.
-- `supabase-schema.sql`: `books` tablosu, RLS politikaları ve indeksler.
+- `supabase-schema.sql`: `books` ve kullanıcıya özel `profiles` tabloları, RLS politikaları ve indeksler.
 - `supabase-config.js`: Yalnızca frontend'de bulunabilecek Supabase URL/anon anahtarı ve isteğe bağlı Google Books anahtarı.
 - `sw.js`: Uygulama kabuğu cache'i ve ağdan öncelikli PWA stratejisi.
 - `netlify/functions/books.js`: Eski db.json endpoint'inin kapalı güvenlik stub'ı; veri kaynağı olarak kullanılmaz.
@@ -42,6 +42,8 @@ Bir kitap şu alanları kullanır: `id`, `title`, `author`, `year`, `tags`, `rea
 ## Senkronizasyon kuralları
 
 Normal kayıt, düzenleme ve durum değişikliği Supabase'e upsert yapar; uzak kitapları silmez. Silme ve "Tümünü Sil" işlemleri özellikle `{ allowDelete: true }` seçeneğini vermelidir. Ağ yokken son kitap listesi kullanıcıya gösterilir ve bekleyen senkron localStorage'da tutulur.
+
+Profil bilgileri `PROFILE_KEY` ile kullanıcıya özel localStorage alanında tutulur. Oturumlu kullanıcı profili `profiles` tablosuna upsert edilir ve RLS nedeniyle yalnızca sahibi tarafından okunup değiştirilebilir. Şema güncellenirken `supabase-schema.sql` içindeki profil tabloları da çalıştırılmalıdır.
 
 ## Geliştirme kuralları
 

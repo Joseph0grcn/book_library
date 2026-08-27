@@ -2,7 +2,7 @@ import { supabaseClient, setActiveUser, getUserStorageKey } from './core/config.
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState } from './core/storage.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
@@ -111,6 +111,22 @@ function setup() {
   const progress = document.getElementById('progress');
   const progressValue = document.getElementById('progress-value');
   const shelf = document.getElementById('shelf');
+  const profileForm = document.getElementById('profile-form');
+  const profileNameInput = document.getElementById('profile-name-input');
+  const profileUsernameInput = document.getElementById('profile-username-input');
+  const profileBioInput = document.getElementById('profile-bio-input');
+  const profileLocationInput = document.getElementById('profile-location-input');
+  const profileWebsiteInput = document.getElementById('profile-website-input');
+  const profileAvatarInput = document.getElementById('profile-avatar-input');
+  const profileCoverInput = document.getElementById('profile-cover-input');
+  const profileAvatarImage = document.getElementById('profile-avatar-image');
+  const profileAvatarFallback = document.getElementById('profile-avatar-fallback');
+  const profileCoverImage = document.getElementById('profile-cover-image');
+  const profileDisplayName = document.getElementById('profile-display-name');
+  const profileUsername = document.getElementById('profile-username');
+  const profileBio = document.getElementById('profile-bio');
+  const profileLocation = document.getElementById('profile-location');
+  const profileWebsite = document.getElementById('profile-website');
   const quickAddBooks = document.getElementById('quick-add-books');
   const quickScanQueueEl = document.getElementById('quick-scan-queue');
   const quickScanCount = document.getElementById('quick-scan-count');
@@ -128,6 +144,40 @@ function setup() {
   function setScannerVisible(isVisible) {
     scannerModal.classList.toggle('hidden', !isVisible);
     scannerModal.style.display = isVisible ? 'flex' : 'none';
+  }
+
+  function safeUrl(value) {
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function renderProfile(profile = loadProfile()) {
+    const displayName = profile.displayName || 'Profilim';
+    profileNameInput.value = profile.displayName;
+    profileUsernameInput.value = profile.username;
+    profileBioInput.value = profile.bio;
+    profileLocationInput.value = profile.location;
+    profileWebsiteInput.value = profile.website;
+    profileAvatarInput.value = profile.avatarUrl;
+    profileCoverInput.value = profile.coverUrl;
+    profileDisplayName.textContent = displayName;
+    profileUsername.textContent = profile.username ? `@${profile.username}` : 'Profil bilgilerinizi düzenleyin';
+    profileBio.textContent = profile.bio || 'Kendiniz hakkında birkaç satır ekleyin.';
+    profileLocation.textContent = profile.location ? `⌖ ${profile.location}` : '';
+    profileWebsite.textContent = profile.website ? `↗ ${profile.website.replace(/^https?:\/\//, '')}` : '';
+    profileWebsite.title = profile.website || '';
+    profileAvatarFallback.textContent = displayName.slice(0, 1).toUpperCase();
+    const avatarUrl = safeUrl(profile.avatarUrl);
+    profileAvatarImage.classList.toggle('hidden', !avatarUrl);
+    profileAvatarFallback.classList.toggle('hidden', !!avatarUrl);
+    if (avatarUrl) profileAvatarImage.src = avatarUrl;
+    const coverUrl = safeUrl(profile.coverUrl);
+    profileCoverImage.classList.toggle('hidden', !coverUrl);
+    if (coverUrl) profileCoverImage.src = coverUrl;
   }
 
   function renderQuickScanQueue() {
@@ -200,6 +250,8 @@ function setup() {
   }
 
   setScannerVisible(false);
+  renderProfile();
+  window.addEventListener('book-library:profile-updated', (event) => renderProfile(event.detail));
   setMode(new URLSearchParams(window.location.search).get('mode') === 'manual' ? 'manual' : 'isbn');
 
   modeManual.addEventListener('click', () => {
@@ -538,6 +590,28 @@ function setup() {
     render();
   });
 
+  profileForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const profile = saveProfile({
+      ...loadProfile(),
+      displayName: profileNameInput.value,
+      username: profileUsernameInput.value,
+      bio: profileBioInput.value,
+      location: profileLocationInput.value,
+      website: profileWebsiteInput.value,
+      avatarUrl: profileAvatarInput.value,
+      coverUrl: profileCoverInput.value,
+      updatedAt: Date.now()
+    });
+    renderProfile(profile);
+    try {
+      await syncProfileToServer(profile);
+      showToast('Profiliniz kaydedildi.', 'success');
+    } catch (error) {
+      showToast(`Profil yerel olarak kaydedildi. Sunucuya aktarılamadı: ${error.message}`, 'error');
+    }
+  });
+
   // Filters & Search event listeners
   document.getElementById('search').addEventListener('input', render);
   document.getElementById('filter').addEventListener('change', render);
@@ -689,6 +763,7 @@ async function initializeApp() {
   const actionsMenuToggle = document.getElementById('actions-menu-toggle');
   const stats = document.getElementById('dashboard-stats');
   const quotesSection = document.getElementById('quotes-section');
+  const profileSection = document.getElementById('profile-section');
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
@@ -697,12 +772,13 @@ async function initializeApp() {
     controls.classList.remove('hidden');
     list.classList.remove('hidden');
     detail.classList.add('hidden', 'page-hidden');
-    controls.classList.toggle('page-hidden', page === 'stats' || page === 'quotes');
+    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile'].includes(page));
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
     filters.classList.toggle('page-hidden', page !== 'library');
     stats.classList.toggle('page-hidden', page !== 'stats');
     if (quotesSection) quotesSection.classList.toggle('page-hidden', page !== 'quotes');
+    if (profileSection) profileSection.classList.toggle('page-hidden', page !== 'profile');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
@@ -725,7 +801,7 @@ async function initializeApp() {
   });
 
   const initialPage = window.location.hash.slice(1);
-  setPage(['add', 'stats', 'quotes'].includes(initialPage) ? initialPage : 'library');
+  setPage(['add', 'stats', 'quotes', 'profile'].includes(initialPage) ? initialPage : 'library');
 
   const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
@@ -768,6 +844,13 @@ async function initializeApp() {
     if (session && supabaseClient) {
       try {
         await flushPendingSync();
+        try {
+          const profile = await fetchProfileFromServer();
+          saveProfile(profile);
+          window.dispatchEvent(new CustomEvent('book-library:profile-updated', { detail: profile }));
+        } catch (profileError) {
+          console.warn('Profile sync unavailable:', profileError);
+        }
         const books = await fetchAllBooksFromServer();
         saveBooks(books);
         render();

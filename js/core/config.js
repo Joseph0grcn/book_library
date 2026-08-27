@@ -1,4 +1,5 @@
 export const STORAGE_KEY = 'book_library_books';
+export const PROFILE_KEY = 'book_library_profile';
 export const PENDING_SYNC_KEY = 'book_library_pending_sync';
 export const QUOTES_KEY = 'book_library_quotes';
 export const BADGES_KEY = 'book_library_badges';

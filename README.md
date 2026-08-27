@@ -72,6 +72,7 @@ Supabase ayarları yoksa veya bağlantı başarısızsa uygulamayı "Yerel Modda
 
 1. Supabase projesi oluşturun.
 2. SQL Editor'da `supabase-schema.sql` dosyasını çalıştırın.
+   Bu şema kitapların yanında kullanıcı profili için `profiles` tablosunu da oluşturur.
 3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
 4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
 5. E-posta doğrulaması kullanılıyorsa SMTP ve Redirect URL ayarlarını yapılandırın.
