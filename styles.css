@@ -282,13 +282,14 @@ h1 {
   top: 190px;
   z-index: 4;
   display: none;
-  width: 138px;
-  min-height: 150px;
-  padding: 14px;
+  width: 244px;
+  min-height: 390px;
+  padding: 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--card) 90%, transparent);
   box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
 .mock-ad-left {
@@ -311,6 +312,62 @@ h1 {
   color: var(--muted);
   font-size: 1rem;
   line-height: 1;
+  cursor: pointer;
+}
+
+.mock-ad-art {
+  display: flex;
+  min-height: 174px;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 8px;
+  background: #0f5f57;
+  color: #d9f3e8;
+}
+
+.mock-ad-art span,
+.mock-ad-art small {
+  color: #9de1c5;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.mock-ad-art strong {
+  margin: 0;
+  color: #f8d486;
+  font-family: Georgia, serif;
+  font-size: 4rem;
+  line-height: 0.9;
+}
+
+.mock-ad-art-alt {
+  background: #285172;
+}
+
+.mock-ad-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+}
+
+.mock-ad-action {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 7px;
+  background: var(--primary);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
