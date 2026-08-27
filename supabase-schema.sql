@@ -8,6 +8,8 @@ drop table if exists public.books cascade;
 
 drop table if exists public.profiles cascade;
 
+drop table if exists public.feed_posts cascade;
+
 create table public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default '',
@@ -91,6 +93,44 @@ create table public.books (
   created_at timestamptz not null default now()
 );
 
+create table public.feed_posts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  author text not null default '',
+  year text not null default '',
+  isbn text not null default '',
+  cover_url text not null default '',
+  rating integer not null default 0 check (rating between 0 and 5),
+  status text not null default 'unread',
+  caption text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.feed_posts enable row level security;
+
+create policy "Users can view their friends feed posts"
+  on public.feed_posts for select
+  using (
+    auth.uid() = user_id
+    or exists (
+      select 1 from public.friendships
+      where status = 'accepted'
+        and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+          or (addressee_id = auth.uid() and requester_id = feed_posts.user_id))
+    )
+  );
+
+create policy "Users can create their own feed posts"
+  on public.feed_posts for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete their own feed posts"
+  on public.feed_posts for delete
+  using (auth.uid() = user_id);
+
+create index feed_posts_user_created_idx on public.feed_posts(user_id, created_at desc);
+
 -- 3. Satır Düzeyinde Güvenliği (RLS) Aktifleştirir
 alter table public.books enable row level security;
 
@@ -119,3 +159,4 @@ create index books_created_at_idx on public.books(created_at desc);
 
 -- 6. Supabase Realtime (Canlı Cihaz Eşitleme) Yayınına Ekleme
 alter publication supabase_realtime add table public.books;
+alter publication supabase_realtime add table public.feed_posts;

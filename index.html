@@ -53,7 +53,8 @@
     </header>
 
     <nav class="page-nav" aria-label="Sayfa gezinme">
-      <button type="button" class="page-link active" data-page="library">Kitaplığım</button>
+      <button type="button" class="page-link active" data-page="feed">Akış</button>
+      <button type="button" class="page-link" data-page="library">Kitaplığım</button>
       <button type="button" class="page-link" data-page="add">Kitap ekle</button>
       <button type="button" class="page-link" data-page="stats">İstatistik & Rozetler</button>
       <button type="button" class="page-link" data-page="quotes">Alıntılarım</button>
@@ -108,6 +109,7 @@
             <option value="favorites">Favorilerim</option>
             <option value="reread">Tekrar okunacaklar</option>
           </select>
+          <label class="share-toggle"><input id="share-in-feed" type="checkbox" /> <span>Akışta paylaş</span></label>
         </div>
         <div class="personal-fields">
           <label class="field-label">
@@ -120,6 +122,7 @@
           </label>
           <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
           <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı - **koyu**, *italik*, > alıntı)"></textarea>
+          <textarea id="share-caption" class="share-caption" maxlength="500" placeholder="Akış notu (isteğe bağlı)"></textarea>
         </div>
         <button type="submit" id="save-book">Kitabı Kaydet</button>
       </form>
@@ -244,6 +247,18 @@
       </div>
 
       <div id="quotes-list" class="quotes-grid"></div>
+    </section>
+
+    <section id="feed-section" class="feed-section page-hidden" aria-label="Arkadaş akışı">
+      <div class="feed-header card-widget">
+        <div>
+          <p class="eyebrow">ARKADAŞLARININ OKUMA DÜNYASI</p>
+          <h2>Akış</h2>
+          <p class="muted">Arkadaşlarının kitap keşiflerini ve okuma güncellemelerini burada gör.</p>
+        </div>
+        <button type="button" id="refresh-feed" class="secondary">Yenile</button>
+      </div>
+      <div id="feed-list" class="feed-list"></div>
     </section>
 
     <section id="friends-section" class="friends-section page-hidden" aria-label="Arkadaşlarım">
@@ -446,7 +461,11 @@
     <section id="list" class="list"></section>
 
     <nav class="mobile-tabbar" aria-label="Ana gezinme">
-      <button type="button" class="tab active" data-page="library">
+      <button type="button" class="tab active" data-page="feed">
+        <span class="tab-icon" aria-hidden="true">⌂</span>
+        <span>Akış</span>
+      </button>
+      <button type="button" class="tab" data-page="library">
         <span class="tab-icon" aria-hidden="true">⌂</span>
         <span>Kitaplığım</span>
       </button>

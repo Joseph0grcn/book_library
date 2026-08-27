@@ -2,7 +2,7 @@ import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, sendFriendRequest, updateFriendship, removeFriendship } from './core/storage.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
@@ -135,6 +135,10 @@ function setup() {
   const friendsCount = document.getElementById('friends-count');
   const incomingCount = document.getElementById('incoming-count');
   const outgoingCount = document.getElementById('outgoing-count');
+  const shareInFeed = document.getElementById('share-in-feed');
+  const shareCaption = document.getElementById('share-caption');
+  const feedList = document.getElementById('feed-list');
+  const refreshFeedButton = document.getElementById('refresh-feed');
   const quickAddBooks = document.getElementById('quick-add-books');
   const quickScanQueueEl = document.getElementById('quick-scan-queue');
   const quickScanCount = document.getElementById('quick-scan-count');
@@ -146,6 +150,7 @@ function setup() {
   let quickScanQueue = [];
   let pendingQuickIsbns = [];
   let friendshipData = { friends: [], incoming: [], outgoing: [] };
+  let feedPosts = [];
 
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
@@ -232,6 +237,43 @@ function setup() {
     }
   }
 
+  function renderFeed() {
+    if (!feedPosts.length) {
+      feedList.innerHTML = '<div class="feed-empty card-widget"><strong>Akış henüz boş</strong><span>Arkadaş ekleyip kitaplarını akışta paylaşmalarını bekleyin.</span></div>';
+      return;
+    }
+    feedList.innerHTML = feedPosts.map((post) => {
+      const profile = post.profile || {};
+      const name = profileLabel(profile);
+      const avatar = safeUrl(profile.avatarUrl);
+      const cover = safeUrl(post.cover_url);
+      const status = post.status === 'read' ? 'Okundu' : post.status === 'reading' ? 'Okunuyor' : 'Okunacak';
+      const date = post.created_at ? new Date(post.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      return `<article class="feed-post card-widget">
+        <div class="feed-post-author"><div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</div><div><strong>${escapeHtml(name)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)} · ` : ''}${escapeHtml(date)}</span></div></div>
+        <div class="feed-book"><div class="feed-book-cover">${cover ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(post.title)} kapak görseli" loading="lazy" />` : '<span>Kitap</span>'}</div><div class="feed-book-info"><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.author || 'Yazar bilinmiyor')}${post.year ? ` · ${escapeHtml(post.year)}` : ''}</p><span class="shelf-badge">${status}</span>${post.rating ? `<span class="feed-rating">★ ${post.rating}/5</span>` : ''}</div></div>
+        ${post.caption ? `<p class="feed-caption">${escapeHtml(post.caption)}</p>` : ''}
+      </article>`;
+    }).join('');
+  }
+
+  async function refreshFeed() {
+    if (!supabaseClient || !activeUser) {
+      feedPosts = [];
+      renderFeed();
+      return;
+    }
+    refreshFeedButton.disabled = true;
+    try {
+      feedPosts = await fetchFeedPosts();
+      renderFeed();
+    } catch (error) {
+      showToast('Akış yüklenemedi: ' + error.message, 'error');
+    } finally {
+      refreshFeedButton.disabled = false;
+    }
+  }
+
   function renderQuickScanQueue() {
     quickScanCount.textContent = String(quickScanQueue.length);
     quickScanList.innerHTML = quickScanQueue.length
@@ -304,8 +346,10 @@ function setup() {
   setScannerVisible(false);
   renderProfile();
   renderFriendships();
+  renderFeed();
   window.addEventListener('book-library:profile-updated', (event) => renderProfile(event.detail));
   window.addEventListener('book-library:friendships-refresh', refreshFriendships);
+  window.addEventListener('book-library:feed-refresh', refreshFeed);
   setMode(new URLSearchParams(window.location.search).get('mode') === 'manual' ? 'manual' : 'isbn');
 
   modeManual.addEventListener('click', () => {
@@ -609,8 +653,9 @@ function setup() {
     }
 
     const ratingVal = getStarRatingValue('form-rating-widget');
-
-    books.unshift(createBook({
+    const shouldShareInFeed = shareInFeed.checked;
+    const feedCaption = shareCaption.value.trim();
+    const newBook = createBook({
       title,
       author,
       year,
@@ -626,14 +671,29 @@ function setup() {
       finishDate: document.getElementById('finish-date').value,
       isbn,
       metadata
-    }));
+    });
+
+    books.unshift(newBook);
 
     saveBooks(books);
     await syncBooksToServer(books);
+    if (shouldShareInFeed) {
+      if (supabaseClient && activeUser) {
+        try {
+          await createFeedPost(newBook, feedCaption);
+          window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
+        } catch (error) {
+          showToast('Kitap kaydedildi ancak akışta paylaşılamadı: ' + error.message, 'error');
+        }
+      } else {
+        showToast('Kitap kaydedildi. Akış paylaşımı için çevrimiçi hesapla giriş yapın.', 'info');
+      }
+    }
     form.reset();
     pendingFetchedBook = null;
     setupStarRating('form-rating-widget', 0);
     progressValue.value = '0%';
+    shareCaption.classList.add('hidden');
     setMode('isbn');
     if (pendingQuickIsbns.length) {
       showToast('Kitap kaydedildi. Sıradaki kitap hazırlanıyor.', 'success');
@@ -715,6 +775,11 @@ function setup() {
   };
   friendsList.addEventListener('click', handleFriendAction);
   incomingFriends.addEventListener('click', handleFriendAction);
+  refreshFeedButton.addEventListener('click', refreshFeed);
+  shareInFeed.addEventListener('change', () => {
+    shareCaption.classList.toggle('hidden', !shareInFeed.checked);
+  });
+  shareCaption.classList.add('hidden');
 
   // Filters & Search event listeners
   document.getElementById('search').addEventListener('input', render);
@@ -869,6 +934,7 @@ async function initializeApp() {
   const quotesSection = document.getElementById('quotes-section');
   const profileSection = document.getElementById('profile-section');
   const friendsSection = document.getElementById('friends-section');
+  const feedSection = document.getElementById('feed-section');
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
@@ -877,7 +943,7 @@ async function initializeApp() {
     controls.classList.remove('hidden');
     list.classList.remove('hidden');
     detail.classList.add('hidden', 'page-hidden');
-    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends'].includes(page));
+    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends', 'feed'].includes(page));
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
     filters.classList.toggle('page-hidden', page !== 'library');
@@ -885,6 +951,7 @@ async function initializeApp() {
     if (quotesSection) quotesSection.classList.toggle('page-hidden', page !== 'quotes');
     if (profileSection) profileSection.classList.toggle('page-hidden', page !== 'profile');
     if (friendsSection) friendsSection.classList.toggle('page-hidden', page !== 'friends');
+    if (feedSection) feedSection.classList.toggle('page-hidden', page !== 'feed');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
@@ -892,6 +959,7 @@ async function initializeApp() {
 
     if (page === 'add') document.getElementById('mode-isbn')?.click();
     if (page === 'friends') window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
+    if (page === 'feed') window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
     window.history.replaceState(null, '', page === 'library' ? window.location.pathname : `#${page}`);
   };
 
@@ -908,7 +976,7 @@ async function initializeApp() {
   });
 
   const initialPage = window.location.hash.slice(1);
-  setPage(['add', 'stats', 'quotes', 'profile', 'friends'].includes(initialPage) ? initialPage : 'library');
+  setPage(['feed', 'add', 'stats', 'quotes', 'profile', 'friends'].includes(initialPage) ? initialPage : 'feed');
 
   const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
@@ -965,6 +1033,7 @@ async function initializeApp() {
           render();
         });
         window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
+        window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
       } catch (err) {
         console.warn('Background sync error:', err);
       }

@@ -21,7 +21,7 @@ Kitap Kütüphanem, build adımı olmayan, tarayıcıda çalışan bir PWA'dır.
 - `tests/`: Node.js yerleşik testleri; ISBN ve kitap veri sözleşmesinin temel senaryoları.
 - `scripts/check.mjs`: Build gerektirmeyen statik proje doğrulamaları.
 - `package.json`, `eslint.config.js`, `.prettierrc.json`: Geliştirme komutları ve kalite kuralları.
-- `supabase-schema.sql`: `books`, `profiles` ve `friendships` tabloları, RLS politikaları ve indeksler.
+- `supabase-schema.sql`: `books`, `profiles`, `friendships` ve `feed_posts` tabloları, RLS politikaları ve indeksler.
 - `supabase-config.js`: Yalnızca frontend'de bulunabilecek Supabase URL/anon anahtarı ve isteğe bağlı Google Books anahtarı.
 - `sw.js`: Uygulama kabuğu cache'i ve ağdan öncelikli PWA stratejisi.
 - `netlify/functions/books.js`: Eski db.json endpoint'inin kapalı güvenlik stub'ı; veri kaynağı olarak kullanılmaz.
@@ -46,6 +46,8 @@ Normal kayıt, düzenleme ve durum değişikliği Supabase'e upsert yapar; uzak 
 Profil bilgileri `PROFILE_KEY` ile kullanıcıya özel localStorage alanında tutulur. Oturumlu kullanıcı profili `profiles` tablosuna upsert edilir ve RLS nedeniyle yalnızca sahibi tarafından okunup değiştirilebilir. Şema güncellenirken `supabase-schema.sql` içindeki profil tabloları da çalıştırılmalıdır.
 
 Arkadaşlıklar `friendships` tablosunda `pending`, `accepted` veya `declined` durumlarıyla tutulur. Profil araması ve arkadaşlık kayıtları yalnızca oturumlu kullanıcılar içindir; misafir modunda arkadaşlık işlemleri kullanılamaz. `profiles` için arkadaş aramasını destekleyen authenticated select politikası, kullanıcıların profil kartı alanlarını diğer oturumlu kullanıcılara görünür kılar.
+
+Akış gönderileri `feed_posts` tablosunda kitap bilgilerinin paylaşım anındaki özeti olarak tutulur. Gönderiler yalnızca gönderi sahibi ve `accepted` durumundaki arkadaşları tarafından okunabilir; kitapların özel `notes`, `review` ve ilerleme alanları akışa aktarılmaz.
 
 ## Geliştirme kuralları
 

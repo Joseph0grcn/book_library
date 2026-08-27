@@ -242,6 +242,52 @@ export async function removeFriendship(id) {
   if (error) throw error;
 }
 
+function getFeedCoverUrl(book) {
+  const links = book?.metadata?.imageLinks;
+  if (!links || typeof links !== 'object') return '';
+  return String(links.thumbnail || links.smallThumbnail || '').replace(/^http:/, 'https:');
+}
+
+export async function createFeedPost(book, caption = '') {
+  if (!supabaseClient || !activeUser) throw new Error('Akışta paylaşmak için çevrimiçi hesapla giriş yapmalısınız.');
+  const { error } = await supabaseClient.from('feed_posts').insert({
+    id: uid(),
+    user_id: activeUser.id,
+    title: String(book.title || '').trim(),
+    author: String(book.author || '').trim(),
+    year: String(book.year || '').trim(),
+    isbn: String(book.isbn || '').trim(),
+    cover_url: getFeedCoverUrl(book),
+    rating: Number(book.rating) || 0,
+    status: String(book.status || 'unread'),
+    caption: String(caption || '').trim().slice(0, 500)
+  });
+  if (error) throw error;
+}
+
+export async function fetchFeedPosts() {
+  if (!supabaseClient || !activeUser) return [];
+  const { data: posts, error } = await supabaseClient
+    .from('feed_posts')
+    .select('id, user_id, title, author, year, isbn, cover_url, rating, status, caption, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  const rows = Array.isArray(posts) ? posts : [];
+  const userIds = [...new Set(rows.map((post) => post.user_id))];
+  if (!userIds.length) return [];
+  const { data: profiles, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('user_id, display_name, username, avatar_url')
+    .in('user_id', userIds);
+  if (profileError) throw profileError;
+  const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, normalizeProfile(profile)]));
+  return rows.map((post) => ({
+    ...post,
+    profile: profileMap.get(post.user_id) || normalizeProfile()
+  }));
+}
+
 export function getSyncState() {
   try {
     return JSON.parse(localStorage.getItem(getUserStorageKey(SYNC_STATE_KEY)) || '{}');
