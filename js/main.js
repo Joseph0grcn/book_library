@@ -1197,8 +1197,8 @@ async function initializeApp() {
   });
 
   const mockAdLinks = [
-    { name: 'Endbaş Elektronik', handle: '@endbas_elektronik', url: 'https://www.shopier.com/dreamlayerstr', label: 'ENDBAŞ ELEKTRONİK', art: 'E', detail: 'ELEKTRONİK', copy: 'Markayı ve güncel ürünleri Shopier mağazasında keşfet.' },
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'LAYERS', copy: 'Markanın ürünlerini Shopier mağazasında keşfet.' }
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'SEÇKİ', copy: 'Dream Layers ürünlerini Shopier mağazasında keşfet.' },
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'YENİ', copy: 'Yeni Dream Layers seçkisini Shopier mağazasında incele.' }
   ];
   document.querySelectorAll('.mock-ad-rail').forEach((ad, index) => {
     const content = mockAdLinks[index];
