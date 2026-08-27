@@ -1197,8 +1197,8 @@ async function initializeApp() {
   });
 
   const mockAdLinks = [
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'SEÇKİ', copy: 'Dream Layers ürünlerini Shopier mağazasında keşfet.' },
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'YENİ', copy: 'Yeni Dream Layers seçkisini Shopier mağazasında incele.' }
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', image: 'https://cdn.shopier.app/pictures_large/dreamlayerstr_1ab277ea81cd7b768a65ec58d9c5fddd.png', label: 'DREAM LAYERS', art: 'DL', detail: 'SEÇKİ', copy: 'Dream Layers ürünlerini Shopier mağazasında keşfet.' },
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', image: 'https://cdn.shopier.app/pictures_large/dreamlayerstr_f9c1289a9a9cb4e7f15cca8b59ed77a1.png', label: 'DREAM LAYERS', art: 'DL', detail: 'YENİ', copy: 'Yeni Dream Layers seçkisini Shopier mağazasında incele.' }
   ];
   document.querySelectorAll('.mock-ad-rail').forEach((ad, index) => {
     const content = mockAdLinks[index];
@@ -1207,6 +1207,8 @@ async function initializeApp() {
     ad.querySelector('.mock-ad-art span').textContent = content.label.split(' ')[0];
     ad.querySelector('.mock-ad-art strong').textContent = content.art;
     ad.querySelector('.mock-ad-art small').textContent = content.detail;
+    ad.querySelector('.mock-ad-art').style.backgroundImage = `url("${content.image}")`;
+    ad.querySelector('.mock-ad-art').classList.add('has-image');
     ad.querySelector('.mock-ad-art + strong').textContent = content.name;
     ad.querySelector('.mock-ad-art + strong + span').textContent = content.copy;
     ad.querySelector('.mock-ad-meta span:first-child').textContent = 'Instagram';
