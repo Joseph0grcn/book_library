@@ -22,6 +22,7 @@ Kitap Kütüphanem, build adımı olmayan, tarayıcıda çalışan bir PWA'dır.
 - `scripts/check.mjs`: Build gerektirmeyen statik proje doğrulamaları.
 - `package.json`, `eslint.config.js`, `.prettierrc.json`: Geliştirme komutları ve kalite kuralları.
 - `supabase-schema.sql`: `books`, `profiles`, `friendships` ve `feed_posts` tabloları, RLS politikaları ve indeksler.
+- `supabase-feed-migration.sql`: Mevcut verileri silmeden yalnızca `feed_posts` tablosunu ekleyen migration.
 - `supabase-config.js`: Yalnızca frontend'de bulunabilecek Supabase URL/anon anahtarı ve isteğe bağlı Google Books anahtarı.
 - `sw.js`: Uygulama kabuğu cache'i ve ağdan öncelikli PWA stratejisi.
 - `netlify/functions/books.js`: Eski db.json endpoint'inin kapalı güvenlik stub'ı; veri kaynağı olarak kullanılmaz.

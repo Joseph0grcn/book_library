@@ -74,8 +74,8 @@ Supabase ayarları yoksa veya bağlantı başarısızsa uygulamayı "Yerel Modda
 ## Supabase Kurulumu
 
 1. Supabase projesi oluşturun.
-2. SQL Editor'da `supabase-schema.sql` dosyasını çalıştırın.
-   Bu şema kitapların yanında kullanıcı profili için `profiles`, arkadaşlıklar için `friendships` ve sosyal akış için `feed_posts` tablolarını da oluşturur.
+2. İlk kurulumda SQL Editor'da `supabase-schema.sql` dosyasını çalıştırın. Bu şema kitapların yanında kullanıcı profili için `profiles`, arkadaşlıklar için `friendships` ve sosyal akış için `feed_posts` tablolarını da oluşturur.
+   Mevcut veritabanına sosyal akışı sonradan ekliyorsanız verileri silmeyen `supabase-feed-migration.sql` dosyasını çalıştırın.
 3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
 4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
 5. E-posta doğrulaması kullanılıyorsa SMTP ve Redirect URL ayarlarını yapılandırın.
@@ -119,6 +119,7 @@ Service worker uygulama kabuğunu önbelleğe alır. Kitap verileri ve Supabase 
 - `js/features/badges.js`
 - `supabase-config.js`
 - `supabase-schema.sql`
+- `supabase-feed-migration.sql`
 - `sw.js`
 - `netlify.toml`
 - `netlify/functions/books.js`
