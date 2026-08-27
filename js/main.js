@@ -1217,6 +1217,11 @@ async function initializeApp() {
     action.textContent = 'Mağazayı ziyaret et';
     action.addEventListener('click', () => window.open(content.url, '_blank', 'noopener,noreferrer'));
   });
+  if (mobileMockAd) {
+    const mobileContent = mobileMockAd.querySelector('div');
+    mobileContent.style.backgroundImage = `url("${mockAdLinks[0].image}")`;
+    mobileContent.classList.add('mock-ad-mobile-content');
+  }
 
   googleLoginButton?.addEventListener('click', async () => {
     if (!supabaseClient) {

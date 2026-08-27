@@ -282,7 +282,7 @@ h1 {
   top: 190px;
   z-index: 4;
   display: none;
-  width: 244px;
+  width: 240px;
   min-height: 390px;
   padding: 18px;
   border: 1px solid var(--border);
@@ -293,11 +293,11 @@ h1 {
 }
 
 .mock-ad-left {
-  left: max(18px, calc(50% - 680px));
+  left: max(18px, calc(50% - 798px));
 }
 
 .mock-ad-right {
-  right: max(18px, calc(50% - 680px));
+  right: max(18px, calc(50% - 798px));
 }
 
 .mock-ad-close {
@@ -392,7 +392,22 @@ h1 {
   background: var(--surface-elevated);
 }
 
-@media (min-width: 1360px) {
+.mock-ad-mobile-content {
+  min-height: 82px;
+  padding: 12px 14px;
+  border-radius: 7px;
+  background-position: center;
+  background-size: cover;
+  box-shadow: inset 0 0 0 999px rgba(0, 35, 42, 0.48);
+}
+
+.mock-ad-mobile-content strong,
+.mock-ad-mobile-content span {
+  color: white;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 1600px) {
   .mock-ad-rail {
     display: block;
   }
