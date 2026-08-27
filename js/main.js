@@ -1197,8 +1197,8 @@ async function initializeApp() {
   });
 
   const mockAdLinks = [
-    { name: 'Endbaş Elektronik', handle: '@endbas_elektronik', url: 'https://www.instagram.com/endbas_elektronik/', label: 'ENDBAŞ ELEKTRONİK', art: 'E', detail: 'ELEKTRONİK', copy: 'Markayı ve güncel paylaşımları Instagram hesabında keşfet.' },
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.instagram.com/dreamlayerstr/', label: 'DREAM LAYERS', art: 'DL', detail: 'LAYERS', copy: 'Markanın dünyasını ve yeni paylaşımlarını Instagram hesabında keşfet.' }
+    { name: 'Endbaş Elektronik', handle: '@endbas_elektronik', url: 'https://www.shopier.com/dreamlayerstr', label: 'ENDBAŞ ELEKTRONİK', art: 'E', detail: 'ELEKTRONİK', copy: 'Markayı ve güncel ürünleri Shopier mağazasında keşfet.' },
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', label: 'DREAM LAYERS', art: 'DL', detail: 'LAYERS', copy: 'Markanın ürünlerini Shopier mağazasında keşfet.' }
   ];
   document.querySelectorAll('.mock-ad-rail').forEach((ad, index) => {
     const content = mockAdLinks[index];
@@ -1212,7 +1212,7 @@ async function initializeApp() {
     ad.querySelector('.mock-ad-meta span:first-child').textContent = 'Instagram';
     ad.querySelector('.mock-ad-meta span:last-child').textContent = content.handle;
     const action = ad.querySelector('.mock-ad-action');
-    action.textContent = 'Instagram’da gör';
+    action.textContent = 'Mağazayı ziyaret et';
     action.addEventListener('click', () => window.open(content.url, '_blank', 'noopener,noreferrer'));
   });
 
