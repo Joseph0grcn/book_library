@@ -30,6 +30,8 @@ export function initTheme() {
 export function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(THEME_KEY, theme);
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#002b36' : '#176b5b');
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) {
     themeBtn.textContent = theme === 'dark' ? '☀️ Aydınlık Mod' : '🌙 Koyu Mod';
