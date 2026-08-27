@@ -15,6 +15,8 @@ create table if not exists public.feed_posts (
   created_at timestamptz not null default now()
 );
 
+alter table public.feed_posts add column if not exists cover_large_url text not null default '';
+
 alter table public.feed_posts enable row level security;
 
 drop policy if exists "Users can view their friends feed posts" on public.feed_posts;

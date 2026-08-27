@@ -2033,6 +2033,17 @@ button.danger:hover {
   object-fit: cover;
 }
 
+.feed-cover-button {
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.feed-cover-button:hover {
+  background: var(--card);
+  transform: translateY(-1px);
+}
+
 .feed-book-info {
   display: flex;
   min-width: 0;

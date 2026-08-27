@@ -242,14 +242,26 @@ export async function removeFriendship(id) {
   if (error) throw error;
 }
 
-function getFeedCoverUrl(book) {
+function getFeedCoverUrls(book) {
   const links = book?.metadata?.imageLinks;
-  if (!links || typeof links !== 'object') return '';
-  return String(links.thumbnail || links.smallThumbnail || '').replace(/^http:/, 'https:');
+  if (links && typeof links === 'object') {
+    const urls = [links.thumbnail, links.smallThumbnail].filter(Boolean).map((url) => String(url).replace(/^http:/, 'https:'));
+    const large = String(links.extraLarge || links.large || links.medium || links.thumbnail || '').replace(/^http:/, 'https:');
+    return { small: urls[0] || large, large };
+  }
+  const coverId = book?.metadata?.cover_i || book?.metadata?.covers?.[0];
+  if (coverId) {
+    return {
+      small: `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-M.jpg`,
+      large: `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg`
+    };
+  }
+  return { small: '', large: '' };
 }
 
 export async function createFeedPost(book, caption = '') {
   if (!supabaseClient || !activeUser) throw new Error('Akışta paylaşmak için çevrimiçi hesapla giriş yapmalısınız.');
+  const coverUrls = getFeedCoverUrls(book);
   const { error } = await supabaseClient.from('feed_posts').insert({
     id: uid(),
     user_id: activeUser.id,
@@ -257,7 +269,8 @@ export async function createFeedPost(book, caption = '') {
     author: String(book.author || '').trim(),
     year: String(book.year || '').trim(),
     isbn: String(book.isbn || '').trim(),
-    cover_url: getFeedCoverUrl(book),
+    cover_url: coverUrls.small,
+    cover_large_url: coverUrls.large,
     rating: Number(book.rating) || 0,
     status: String(book.status || 'unread'),
     caption: String(caption || '').trim().slice(0, 500)
@@ -269,7 +282,7 @@ export async function fetchFeedPosts() {
   if (!supabaseClient || !activeUser) return [];
   const { data: posts, error } = await supabaseClient
     .from('feed_posts')
-    .select('id, user_id, title, author, year, isbn, cover_url, rating, status, caption, created_at')
+    .select('id, user_id, title, author, year, isbn, cover_url, cover_large_url, rating, status, caption, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) throw error;

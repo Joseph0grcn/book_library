@@ -101,6 +101,7 @@ create table public.feed_posts (
   year text not null default '',
   isbn text not null default '',
   cover_url text not null default '',
+  cover_large_url text not null default '',
   rating integer not null default 0 check (rating between 0 and 5),
   status text not null default 'unread',
   caption text not null default '',

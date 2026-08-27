@@ -3,7 +3,7 @@ import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
 import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts } from './core/storage.js';
-import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
+import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
 let deferredInstallPrompt = null;
@@ -151,6 +151,7 @@ function setup() {
   let pendingQuickIsbns = [];
   let friendshipData = { friends: [], incoming: [], outgoing: [] };
   let feedPosts = [];
+  let scannerBusy = false;
 
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
@@ -247,11 +248,12 @@ function setup() {
       const name = profileLabel(profile);
       const avatar = safeUrl(profile.avatarUrl);
       const cover = safeUrl(post.cover_url);
+      const largeCover = safeUrl(post.cover_large_url || post.cover_url);
       const status = post.status === 'read' ? 'Okundu' : post.status === 'reading' ? 'Okunuyor' : 'Okunacak';
       const date = post.created_at ? new Date(post.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
       return `<article class="feed-post card-widget">
         <div class="feed-post-author"><div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</div><div><strong>${escapeHtml(name)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)} · ` : ''}${escapeHtml(date)}</span></div></div>
-        <div class="feed-book"><div class="feed-book-cover">${cover ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(post.title)} kapak görseli" loading="lazy" />` : '<span>Kitap</span>'}</div><div class="feed-book-info"><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.author || 'Yazar bilinmiyor')}${post.year ? ` · ${escapeHtml(post.year)}` : ''}</p><span class="shelf-badge">${status}</span>${post.rating ? `<span class="feed-rating">★ ${post.rating}/5</span>` : ''}</div></div>
+        <div class="feed-book">${cover ? `<button type="button" class="feed-book-cover feed-cover-button" data-feed-cover="${escapeHtml(largeCover)}" data-feed-title="${escapeHtml(post.title)}" title="Kapağı büyüt"><img src="${escapeHtml(cover)}" alt="${escapeHtml(post.title)} kapak görseli" loading="lazy" /></button>` : '<div class="feed-book-cover"><span>Kitap</span></div>'}<div class="feed-book-info"><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.author || 'Yazar bilinmiyor')}${post.year ? ` · ${escapeHtml(post.year)}` : ''}</p><span class="shelf-badge">${status}</span>${post.rating ? `<span class="feed-rating">★ ${post.rating}/5</span>` : ''}</div></div>
         ${post.caption ? `<p class="feed-caption">${escapeHtml(post.caption)}</p>` : ''}
       </article>`;
     }).join('');
@@ -281,7 +283,7 @@ function setup() {
       : '<span class="muted">Henüz ISBN okutulmadı.</span>';
   }
 
-  function addQuickScannedIsbn(cleaned, source) {
+  function addQuickScannedIsbn(cleaned) {
     let isbn;
     try {
       isbn = normalizeIsbn(cleaned);
@@ -299,7 +301,6 @@ function setup() {
 
     quickScanQueue.push(isbn);
     renderQuickScanQueue();
-    showToast(`${source} listeye eklendi.`, 'success');
   }
 
   async function processNextQuickBook() {
@@ -424,13 +425,19 @@ function setup() {
   async function handleScannedIsbn(cleaned, source) {
     isbnInput.value = cleaned;
     if (quickScanMode) {
-      addQuickScannedIsbn(cleaned, source);
+      addQuickScannedIsbn(cleaned);
       return;
     }
+    if (scannerBusy) return;
+    scannerBusy = true;
     showToast(`${source} algılandı. Bilgi getiriliyor...`, 'info');
     stopScanner();
-    const book = await fetchBookMetadata(cleaned);
-    prepareFetchedBook(book, source);
+    try {
+      const book = await fetchBookMetadata(cleaned);
+      prepareFetchedBook(book, source);
+    } finally {
+      scannerBusy = false;
+    }
   }
 
   async function openScanner() {
@@ -776,6 +783,11 @@ function setup() {
   friendsList.addEventListener('click', handleFriendAction);
   incomingFriends.addEventListener('click', handleFriendAction);
   refreshFeedButton.addEventListener('click', refreshFeed);
+  feedList.addEventListener('click', (event) => {
+    const coverButton = event.target.closest('[data-feed-cover]');
+    if (!coverButton) return;
+    openCoverModal(coverButton.dataset.feedCover, coverButton.dataset.feedTitle || 'Kitap kapağı');
+  });
   shareInFeed.addEventListener('change', () => {
     shareCaption.classList.toggle('hidden', !shareInFeed.checked);
   });
