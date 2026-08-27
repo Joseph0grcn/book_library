@@ -44,3 +44,16 @@ create policy "Users can delete their own feed posts"
   using (auth.uid() = user_id);
 
 create index if not exists feed_posts_user_created_idx on public.feed_posts(user_id, created_at desc);
+
+-- Kabul edilmiş arkadaşlar birbirlerinin kitaplıklarını görebilir.
+drop policy if exists "Users can view their friends books" on public.books;
+create policy "Users can view their friends books"
+  on public.books for select
+  using (
+    exists (
+      select 1 from public.friendships
+      where status = 'accepted'
+        and ((requester_id = auth.uid() and addressee_id = books.user_id)
+          or (addressee_id = auth.uid() and requester_id = books.user_id))
+    )
+  );

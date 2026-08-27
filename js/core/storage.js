@@ -197,6 +197,30 @@ export async function fetchFriendships() {
   };
 }
 
+export async function fetchFriendProfile(userId) {
+  if (!supabaseClient || !activeUser || !userId) throw new Error('Arkadaş profili yalnızca çevrimiçi hesaplarla görüntülenebilir.');
+
+  const { data: profile, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('user_id, display_name, username, bio, location, website, avatar_url, cover_url')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile) throw new Error('Bu profil bulunamadı.');
+
+  const { data: books, error: booksError } = await supabaseClient
+    .from('books')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (booksError) throw booksError;
+
+  return {
+    profile: normalizeProfile(profile),
+    books: Array.isArray(books) ? books.map((book) => normalizeBook({ ...book, createdAt: book.created_at, startDate: book.start_date, finishDate: book.finish_date })) : []
+  };
+}
+
 export async function sendFriendRequest(username) {
   if (!supabaseClient || !activeUser) throw new Error('Arkadaş eklemek için çevrimiçi hesapla giriş yapmalısınız.');
   const cleanUsername = String(username || '').trim().replace(/^@/, '').toLowerCase();

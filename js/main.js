@@ -2,8 +2,8 @@ import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts } from './core/storage.js';
-import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts } from './core/storage.js';
+import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, getBookCoverUrl, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
 let deferredInstallPrompt = null;
@@ -133,6 +133,10 @@ function setup() {
   const incomingFriends = document.getElementById('incoming-friends');
   const friendsList = document.getElementById('friends-list');
   const friendsCount = document.getElementById('friends-count');
+  const friendProfileSection = document.getElementById('friend-profile-section');
+  const friendProfileBooksList = document.getElementById('friend-profile-books-list');
+  const friendProfileBooksCount = document.getElementById('friend-profile-books-count');
+  const friendProfileBooksTitle = document.getElementById('friend-profile-books-title');
   const incomingCount = document.getElementById('incoming-count');
   const outgoingCount = document.getElementById('outgoing-count');
   const shareInFeed = document.getElementById('share-in-feed');
@@ -209,11 +213,50 @@ function setup() {
       const label = profileLabel(profile);
       const avatar = safeUrl(profile.avatarUrl);
       return `<div class="friend-item">
-        <div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(label.slice(0, 1).toUpperCase())}</div>
-        <div class="friend-item-info"><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : 'Profil bilgisi yok'}</span></div>
+        <button type="button" class="friend-profile-link" data-friend-profile="${escapeHtml(profile.userId)}" aria-label="${escapeHtml(label)} profilini görüntüle"><span class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(label.slice(0, 1).toUpperCase())}</span>
+        <span class="friend-item-info"><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : 'Profil bilgisi yok'}</span></span></button>
         <div class="friend-item-actions">${actionMarkup(item)}</div>
       </div>`;
     }).join('');
+  }
+
+  function renderFriendProfile(data) {
+    const profile = data.profile;
+    const label = profileLabel(profile);
+    const avatarImage = document.getElementById('friend-profile-avatar-image');
+    const avatarFallback = document.getElementById('friend-profile-avatar-fallback');
+    const avatarUrl = safeUrl(profile.avatarUrl);
+    avatarImage.classList.toggle('hidden', !avatarUrl);
+    avatarFallback.classList.toggle('hidden', !!avatarUrl);
+    avatarFallback.textContent = label.slice(0, 1).toUpperCase();
+    if (avatarUrl) avatarImage.src = avatarUrl;
+    const coverImage = document.getElementById('friend-profile-cover-image');
+    const coverUrl = safeUrl(profile.coverUrl);
+    coverImage.classList.toggle('hidden', !coverUrl);
+    if (coverUrl) coverImage.src = coverUrl;
+    document.getElementById('friend-profile-display-name').textContent = label;
+    document.getElementById('friend-profile-username').textContent = profile.username ? `@${profile.username}` : '';
+    document.getElementById('friend-profile-bio').textContent = profile.bio || 'Bu kullanıcı henüz hakkında bilgi eklememiş.';
+    document.getElementById('friend-profile-location').textContent = profile.location ? `⌖ ${profile.location}` : '';
+    document.getElementById('friend-profile-website').textContent = profile.website ? `↗ ${profile.website.replace(/^https?:\/\//, '')}` : '';
+    friendProfileBooksCount.textContent = `${data.books.length} kitap`;
+    friendProfileBooksTitle.textContent = `${label} adlı kişinin kütüphanesi`;
+    friendProfileBooksList.innerHTML = data.books.length ? data.books.map((book) => {
+      const cover = safeUrl(getBookCoverUrl(book));
+      const status = book.status === 'read' ? 'Okundu' : book.status === 'reading' ? 'Okunuyor' : 'Okunacak';
+      return `<article class="friend-book-item">${cover ? `<button type="button" class="friend-book-cover" data-friend-book-cover="${escapeHtml(cover)}" data-friend-book-title="${escapeHtml(book.title)}"><img src="${escapeHtml(cover)}" alt="${escapeHtml(book.title)} kapak görseli" loading="lazy" /></button>` : '<div class="friend-book-cover friend-book-cover-empty">Kitap</div>'}<div><h3>${escapeHtml(book.title)}</h3><p>${escapeHtml(book.author || 'Yazar bilinmiyor')}</p><span class="shelf-badge">${status}</span></div></article>`;
+    }).join('') : '<p class="muted friend-empty">Bu kütüphanede henüz kitap yok.</p>';
+  }
+
+  async function openFriendProfile(userId) {
+    friendProfileBooksList.innerHTML = '<p class="muted friend-empty">Profil ve kitaplık yükleniyor...</p>';
+    window.dispatchEvent(new CustomEvent('book-library:navigate', { detail: { page: 'friend-profile' } }));
+    try {
+      renderFriendProfile(await fetchFriendProfile(userId));
+    } catch (error) {
+      friendProfileBooksList.innerHTML = `<p class="muted friend-empty">Profil yüklenemedi: ${escapeHtml(error.message)}</p>`;
+      showToast('Arkadaş profili yüklenemedi: ' + error.message, 'error');
+    }
   }
 
   function renderFriendships() {
@@ -767,6 +810,11 @@ function setup() {
   });
 
   const handleFriendAction = async (event) => {
+    const profileLink = event.target.closest('[data-friend-profile]');
+    if (profileLink) {
+      openFriendProfile(profileLink.dataset.friendProfile);
+      return;
+    }
     const button = event.target.closest('[data-friend-action]');
     if (!button) return;
     button.disabled = true;
@@ -781,6 +829,11 @@ function setup() {
     }
   };
   friendsList.addEventListener('click', handleFriendAction);
+  friendProfileSection.addEventListener('click', (event) => {
+    const cover = event.target.closest('[data-friend-book-cover]');
+    if (cover) openCoverModal(cover.dataset.friendBookCover, cover.dataset.friendBookTitle || 'Kitap kapağı');
+  });
+  document.getElementById('back-to-friends').addEventListener('click', () => window.dispatchEvent(new CustomEvent('book-library:navigate', { detail: { page: 'friends' } })));
   incomingFriends.addEventListener('click', handleFriendAction);
   refreshFeedButton.addEventListener('click', refreshFeed);
   feedList.addEventListener('click', (event) => {
@@ -947,6 +1000,7 @@ async function initializeApp() {
   const profileSection = document.getElementById('profile-section');
   const friendsSection = document.getElementById('friends-section');
   const feedSection = document.getElementById('feed-section');
+  const friendProfileSection = document.getElementById('friend-profile-section');
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
@@ -955,7 +1009,7 @@ async function initializeApp() {
     controls.classList.remove('hidden');
     list.classList.remove('hidden');
     detail.classList.add('hidden', 'page-hidden');
-    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends', 'feed'].includes(page));
+    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends', 'feed', 'friend-profile'].includes(page));
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
     filters.classList.toggle('page-hidden', page !== 'library');
@@ -964,6 +1018,7 @@ async function initializeApp() {
     if (profileSection) profileSection.classList.toggle('page-hidden', page !== 'profile');
     if (friendsSection) friendsSection.classList.toggle('page-hidden', page !== 'friends');
     if (feedSection) feedSection.classList.toggle('page-hidden', page !== 'feed');
+    if (friendProfileSection) friendProfileSection.classList.toggle('page-hidden', page !== 'friend-profile');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
@@ -974,6 +1029,8 @@ async function initializeApp() {
     if (page === 'feed') window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
     window.history.replaceState(null, '', page === 'library' ? window.location.pathname : `#${page}`);
   };
+
+  window.addEventListener('book-library:navigate', (event) => setPage(event.detail?.page || 'library'));
 
   document.querySelectorAll('[data-page]').forEach((tab) => {
     tab.addEventListener('click', () => {

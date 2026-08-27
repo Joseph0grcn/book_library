@@ -140,6 +140,17 @@ create policy "Users can view their own books"
   on public.books for select
   using (auth.uid() = user_id);
 
+create policy "Users can view their friends books"
+  on public.books for select
+  using (
+    exists (
+      select 1 from public.friendships
+      where status = 'accepted'
+        and ((requester_id = auth.uid() and addressee_id = books.user_id)
+          or (addressee_id = auth.uid() and requester_id = books.user_id))
+    )
+  );
+
 create policy "Users can insert their own books"
   on public.books for insert
   with check (auth.uid() = user_id);

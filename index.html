@@ -330,6 +330,23 @@
       </form>
     </section>
 
+    <section id="friend-profile-section" class="friend-profile-section page-hidden" aria-label="Arkadaş profili">
+      <button type="button" id="back-to-friends" class="secondary">Arkadaşlara dön</button>
+      <div class="profile-hero card-widget">
+        <div class="profile-cover"><img id="friend-profile-cover-image" alt="Profil kapak görseli" /></div>
+        <div class="profile-identity">
+          <div class="profile-avatar"><img id="friend-profile-avatar-image" alt="Profil fotoğrafı" /><span id="friend-profile-avatar-fallback">P</span></div>
+          <div class="profile-heading"><h2 id="friend-profile-display-name">Arkadaş profili</h2><p id="friend-profile-username" class="muted"></p></div>
+        </div>
+        <p id="friend-profile-bio" class="profile-bio muted"></p>
+        <div class="profile-facts"><span id="friend-profile-location"></span><span id="friend-profile-website"></span></div>
+      </div>
+      <div class="friend-profile-books card-widget">
+        <div class="widget-header"><div><h2 id="friend-profile-books-title">Kütüphane</h2><p class="widget-subtext">Bu arkadaşın kitaplığı</p></div><span id="friend-profile-books-count" class="shelf-badge">0 kitap</span></div>
+        <div id="friend-profile-books-list" class="friend-books-grid"></div>
+      </div>
+    </section>
+
     <div id="scanner-modal" class="scanner-modal hidden">
       <div class="scanner-window">
         <div class="scanner-header">
