@@ -1773,18 +1773,29 @@ button.danger:hover {
     bottom: 0;
     left: 0;
     z-index: 19;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    display: flex;
+    overflow-x: auto;
+    justify-content: flex-start;
     padding: 6px 8px max(6px, env(safe-area-inset-bottom));
     background: var(--surface-elevated);
     border-top: 1px solid var(--border);
     box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.1);
     backdrop-filter: blur(18px);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .mobile-tabbar::-webkit-scrollbar {
+    display: none;
   }
 
   .mobile-tabbar .tab {
+    width: 82px;
+    flex: 0 0 82px;
     min-height: 56px;
     border-radius: 12px;
+    scroll-snap-align: start;
   }
 
   .mobile-tabbar .tab.active {
