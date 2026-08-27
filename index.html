@@ -58,6 +58,7 @@
       <button type="button" class="page-link" data-page="stats">İstatistik & Rozetler</button>
       <button type="button" class="page-link" data-page="quotes">Alıntılarım</button>
       <button type="button" class="page-link" data-page="profile">Profilim</button>
+      <button type="button" class="page-link" data-page="friends">Arkadaşlar</button>
     </nav>
 
     <section id="library-controls" class="controls">
@@ -243,6 +244,38 @@
       </div>
 
       <div id="quotes-list" class="quotes-grid"></div>
+    </section>
+
+    <section id="friends-section" class="friends-section page-hidden" aria-label="Arkadaşlarım">
+      <div class="friends-header card-widget">
+        <div>
+          <p class="eyebrow">SOSYAL OKUMA</p>
+          <h2>Arkadaşların</h2>
+          <p class="muted">Okuma yolculuğunu paylaşmak istediğin kişileri ekle.</p>
+        </div>
+        <div class="friends-summary"><strong id="friends-count">0</strong><span>arkadaş</span></div>
+      </div>
+
+      <div class="friends-grid">
+        <form id="friend-search-form" class="friend-search card-widget">
+          <label class="field-label" for="friend-search-input"><span>Kullanıcı adıyla arkadaş ekle</span></label>
+          <div class="friend-search-row">
+            <input id="friend-search-input" type="search" placeholder="@kullaniciadi" autocomplete="off" />
+            <button type="submit">Ara</button>
+          </div>
+          <div id="friend-search-results" class="friend-search-results"></div>
+        </form>
+
+        <div class="friend-panel card-widget">
+          <div class="widget-header"><strong>Gelen istekler</strong><span id="incoming-count" class="shelf-badge">0</span></div>
+          <div id="incoming-friends" class="friend-list"></div>
+        </div>
+
+        <div class="friend-panel card-widget">
+          <div class="widget-header"><strong>Arkadaş listem</strong><span id="outgoing-count" class="shelf-badge">0 bekliyor</span></div>
+          <div id="friends-list" class="friend-list"></div>
+        </div>
+      </div>
     </section>
 
     <section id="profile-section" class="profile-section page-hidden" aria-label="Profilim">
@@ -432,6 +465,10 @@
       <button type="button" class="tab" data-page="profile">
         <span class="tab-icon" aria-hidden="true">◉</span>
         <span>Profil</span>
+      </button>
+      <button type="button" class="tab" data-page="friends">
+        <span class="tab-icon" aria-hidden="true">♧</span>
+        <span>Arkadaşlar</span>
       </button>
       <button type="button" class="tab" data-page="logout">
         <span class="tab-icon" aria-hidden="true">↪</span>

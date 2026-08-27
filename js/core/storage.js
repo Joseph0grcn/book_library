@@ -97,7 +97,7 @@ export function normalizeProfile(rawProfile = {}) {
     id: rawProfile.id || activeUser?.id || 'local-profile',
     userId: rawProfile.userId || rawProfile.user_id || activeUser?.id || '',
     displayName: String(rawProfile.displayName || rawProfile.display_name || '').trim(),
-    username: String(rawProfile.username || '').trim().replace(/\s+/g, '').slice(0, 30),
+    username: String(rawProfile.username || '').trim().replace(/\s+/g, '').toLowerCase().slice(0, 30),
     bio: String(rawProfile.bio || '').trim().slice(0, 500),
     location: String(rawProfile.location || '').trim().slice(0, 100),
     website: String(rawProfile.website || '').trim().slice(0, 200),
@@ -149,6 +149,97 @@ export async function syncProfileToServer(profile) {
 
   if (error) throw error;
   return { profile: normalizeProfile(data) };
+}
+
+export async function searchProfiles(query) {
+  if (!supabaseClient || !activeUser) return [];
+  const term = String(query || '').trim();
+  if (term.length < 2) return [];
+  const escaped = term.replace(/[%(),]/g, '');
+  if (!escaped) return [];
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('user_id, display_name, username, bio, avatar_url')
+    .neq('user_id', activeUser.id)
+    .or(`username.ilike.%${escaped}%,display_name.ilike.%${escaped}%`)
+    .limit(8);
+  if (error) throw error;
+  return Array.isArray(data) ? data.map(normalizeProfile) : [];
+}
+
+export async function fetchFriendships() {
+  if (!supabaseClient || !activeUser) return { friends: [], incoming: [], outgoing: [] };
+  const { data: rows, error } = await supabaseClient
+    .from('friendships')
+    .select('id, requester_id, addressee_id, status, created_at')
+    .or(`requester_id.eq.${activeUser.id},addressee_id.eq.${activeUser.id}`)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const relationships = Array.isArray(rows) ? rows : [];
+  const ids = [...new Set(relationships.flatMap((row) => [row.requester_id, row.addressee_id]).filter((id) => id !== activeUser.id))];
+  if (!ids.length) return { friends: [], incoming: [], outgoing: [] };
+  const { data: profiles, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('user_id, display_name, username, bio, avatar_url')
+    .in('user_id', ids);
+  if (profileError) throw profileError;
+  const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, normalizeProfile(profile)]));
+  const decorate = (row) => ({
+    id: row.id,
+    status: row.status,
+    createdAt: row.created_at,
+    profile: profileMap.get(row.requester_id === activeUser.id ? row.addressee_id : row.requester_id) || normalizeProfile()
+  });
+  return {
+    friends: relationships.filter((row) => row.status === 'accepted').map(decorate),
+    incoming: relationships.filter((row) => row.status === 'pending' && row.addressee_id === activeUser.id).map(decorate),
+    outgoing: relationships.filter((row) => row.status === 'pending' && row.requester_id === activeUser.id).map(decorate)
+  };
+}
+
+export async function sendFriendRequest(username) {
+  if (!supabaseClient || !activeUser) throw new Error('Arkadaş eklemek için çevrimiçi hesapla giriş yapmalısınız.');
+  const cleanUsername = String(username || '').trim().replace(/^@/, '').toLowerCase();
+  if (!cleanUsername) throw new Error('Kullanıcı adı girin.');
+  const { data: target, error: targetError } = await supabaseClient
+    .from('profiles')
+    .select('user_id')
+    .eq('username', cleanUsername)
+    .neq('user_id', activeUser.id)
+    .maybeSingle();
+  if (targetError) throw targetError;
+  if (!target) throw new Error('Bu kullanıcı adıyla bir profil bulunamadı.');
+  const { data: existing, error: existingError } = await supabaseClient
+    .from('friendships')
+    .select('id, status')
+    .or(`and(requester_id.eq.${activeUser.id},addressee_id.eq.${target.user_id}),and(requester_id.eq.${target.user_id},addressee_id.eq.${activeUser.id})`)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) throw new Error('Bu kullanıcıyla zaten bir arkadaşlık kaydınız var.');
+  const { error } = await supabaseClient.from('friendships').insert({
+    id: uid(),
+    requester_id: activeUser.id,
+    addressee_id: target.user_id,
+    status: 'pending'
+  });
+  if (error) {
+    if (error.code === '23505') throw new Error('Bu kullanıcıya zaten arkadaşlık isteği gönderilmiş.');
+    throw error;
+  }
+}
+
+export async function updateFriendship(id, status) {
+  if (!supabaseClient || !activeUser) throw new Error('Bu işlem için çevrimiçi hesapla giriş yapmalısınız.');
+  const nextStatus = ['accepted', 'declined'].includes(status) ? status : null;
+  if (!nextStatus) throw new Error('Geçersiz arkadaşlık durumu.');
+  const { error } = await supabaseClient.from('friendships').update({ status: nextStatus }).eq('id', id).eq('addressee_id', activeUser.id);
+  if (error) throw error;
+}
+
+export async function removeFriendship(id) {
+  if (!supabaseClient || !activeUser) throw new Error('Bu işlem için çevrimiçi hesapla giriş yapmalısınız.');
+  const { error } = await supabaseClient.from('friendships').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export function getSyncState() {

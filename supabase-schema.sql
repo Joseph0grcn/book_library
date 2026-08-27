@@ -25,7 +25,7 @@ alter table public.profiles enable row level security;
 
 create policy "Users can view their own profile"
   on public.profiles for select
-  using (auth.uid() = user_id);
+  using (auth.role() = 'authenticated');
 
 create policy "Users can insert their own profile"
   on public.profiles for insert
@@ -35,6 +35,39 @@ create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+create table public.friendships (
+  id text primary key,
+  requester_id uuid not null references auth.users(id) on delete cascade,
+  addressee_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz not null default now(),
+  constraint friendships_no_self check (requester_id <> addressee_id),
+  constraint friendships_unique_pair unique (requester_id, addressee_id)
+);
+
+alter table public.friendships enable row level security;
+
+create policy "Users can view their friendships"
+  on public.friendships for select
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+create policy "Users can send friendship requests"
+  on public.friendships for insert
+  with check (auth.uid() = requester_id);
+
+create policy "Users can respond to friendship requests"
+  on public.friendships for update
+  using (auth.uid() = addressee_id)
+  with check (auth.uid() = addressee_id);
+
+create policy "Users can remove their friendships"
+  on public.friendships for delete
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+create index profiles_username_idx on public.profiles(username);
+create index friendships_requester_idx on public.friendships(requester_id);
+create index friendships_addressee_idx on public.friendships(addressee_id);
 
 -- 2. Kitaplar tablosunu tüm güncel sütunlarıyla yeniden oluşturur
 create table public.books (

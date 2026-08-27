@@ -1,8 +1,8 @@
-import { supabaseClient, setActiveUser, getUserStorageKey } from './core/config.js';
+import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './core/config.js';
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer } from './core/storage.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, sendFriendRequest, updateFriendship, removeFriendship } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
@@ -127,6 +127,14 @@ function setup() {
   const profileBio = document.getElementById('profile-bio');
   const profileLocation = document.getElementById('profile-location');
   const profileWebsite = document.getElementById('profile-website');
+  const friendSearchForm = document.getElementById('friend-search-form');
+  const friendSearchInput = document.getElementById('friend-search-input');
+  const friendSearchResults = document.getElementById('friend-search-results');
+  const incomingFriends = document.getElementById('incoming-friends');
+  const friendsList = document.getElementById('friends-list');
+  const friendsCount = document.getElementById('friends-count');
+  const incomingCount = document.getElementById('incoming-count');
+  const outgoingCount = document.getElementById('outgoing-count');
   const quickAddBooks = document.getElementById('quick-add-books');
   const quickScanQueueEl = document.getElementById('quick-scan-queue');
   const quickScanCount = document.getElementById('quick-scan-count');
@@ -137,6 +145,7 @@ function setup() {
   let quickScanMode = false;
   let quickScanQueue = [];
   let pendingQuickIsbns = [];
+  let friendshipData = { friends: [], incoming: [], outgoing: [] };
 
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
@@ -178,6 +187,49 @@ function setup() {
     const coverUrl = safeUrl(profile.coverUrl);
     profileCoverImage.classList.toggle('hidden', !coverUrl);
     if (coverUrl) profileCoverImage.src = coverUrl;
+  }
+
+  function profileLabel(profile) {
+    return profile.displayName || (profile.username ? `@${profile.username}` : 'Adsız kullanıcı');
+  }
+
+  function renderFriendItems(container, items, actionMarkup, emptyText) {
+    if (!items.length) {
+      container.innerHTML = `<p class="muted friend-empty">${emptyText}</p>`;
+      return;
+    }
+    container.innerHTML = items.map((item) => {
+      const profile = item.profile;
+      const label = profileLabel(profile);
+      const avatar = safeUrl(profile.avatarUrl);
+      return `<div class="friend-item">
+        <div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(label.slice(0, 1).toUpperCase())}</div>
+        <div class="friend-item-info"><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : 'Profil bilgisi yok'}</span></div>
+        <div class="friend-item-actions">${actionMarkup(item)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderFriendships() {
+    friendsCount.textContent = String(friendshipData.friends.length);
+    incomingCount.textContent = String(friendshipData.incoming.length);
+    outgoingCount.textContent = `${friendshipData.outgoing.length} bekliyor`;
+    renderFriendItems(friendsList, friendshipData.friends, (item) => `<button type="button" class="small danger" data-friend-action="remove" data-friend-id="${escapeHtml(item.id)}">Çıkar</button>`, 'Henüz arkadaş eklemediniz.');
+    renderFriendItems(incomingFriends, friendshipData.incoming, (item) => `<button type="button" class="small" data-friend-action="accept" data-friend-id="${escapeHtml(item.id)}">Kabul et</button><button type="button" class="small secondary" data-friend-action="decline" data-friend-id="${escapeHtml(item.id)}">Reddet</button>`, 'Bekleyen arkadaşlık isteği yok.');
+  }
+
+  async function refreshFriendships() {
+    if (!supabaseClient || !activeUser) {
+      friendshipData = { friends: [], incoming: [], outgoing: [] };
+      renderFriendships();
+      return;
+    }
+    try {
+      friendshipData = await fetchFriendships();
+      renderFriendships();
+    } catch (error) {
+      showToast('Arkadaş listesi yüklenemedi: ' + error.message, 'error');
+    }
   }
 
   function renderQuickScanQueue() {
@@ -251,7 +303,9 @@ function setup() {
 
   setScannerVisible(false);
   renderProfile();
+  renderFriendships();
   window.addEventListener('book-library:profile-updated', (event) => renderProfile(event.detail));
+  window.addEventListener('book-library:friendships-refresh', refreshFriendships);
   setMode(new URLSearchParams(window.location.search).get('mode') === 'manual' ? 'manual' : 'isbn');
 
   modeManual.addEventListener('click', () => {
@@ -612,6 +666,56 @@ function setup() {
     }
   });
 
+  friendSearchForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!supabaseClient || !activeUser) {
+      showToast('Arkadaş eklemek için çevrimiçi hesapla giriş yapmalısınız.', 'error');
+      return;
+    }
+    friendSearchResults.innerHTML = '<p class="muted friend-empty">Aranıyor...</p>';
+    try {
+      const profiles = await searchProfiles(friendSearchInput.value);
+      friendSearchResults.innerHTML = profiles.length ? profiles.map((profile) => {
+        const label = profileLabel(profile);
+        return `<div class="friend-search-result"><div><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : ''}</span></div><button type="button" class="small" data-add-username="${escapeHtml(profile.username)}">İstek gönder</button></div>`;
+      }).join('') : '<p class="muted friend-empty">Eşleşen profil bulunamadı.</p>';
+    } catch (error) {
+      friendSearchResults.innerHTML = '<p class="muted friend-empty">Profil araması kullanılamıyor.</p>';
+      showToast('Profil araması başarısız: ' + error.message, 'error');
+    }
+  });
+
+  friendSearchResults.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-add-username]');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await sendFriendRequest(button.dataset.addUsername);
+      showToast('Arkadaşlık isteği gönderildi.', 'success');
+      button.textContent = 'Gönderildi';
+    } catch (error) {
+      showToast(error.message, 'error');
+      button.disabled = false;
+    }
+  });
+
+  const handleFriendAction = async (event) => {
+    const button = event.target.closest('[data-friend-action]');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      if (button.dataset.friendAction === 'remove') await removeFriendship(button.dataset.friendId);
+      else await updateFriendship(button.dataset.friendId, button.dataset.friendAction === 'accept' ? 'accepted' : 'declined');
+      await refreshFriendships();
+      showToast(button.dataset.friendAction === 'remove' ? 'Arkadaş çıkarıldı.' : 'Arkadaşlık isteği güncellendi.', 'success');
+    } catch (error) {
+      button.disabled = false;
+      showToast('İşlem başarısız: ' + error.message, 'error');
+    }
+  };
+  friendsList.addEventListener('click', handleFriendAction);
+  incomingFriends.addEventListener('click', handleFriendAction);
+
   // Filters & Search event listeners
   document.getElementById('search').addEventListener('input', render);
   document.getElementById('filter').addEventListener('change', render);
@@ -764,6 +868,7 @@ async function initializeApp() {
   const stats = document.getElementById('dashboard-stats');
   const quotesSection = document.getElementById('quotes-section');
   const profileSection = document.getElementById('profile-section');
+  const friendsSection = document.getElementById('friends-section');
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
@@ -772,19 +877,21 @@ async function initializeApp() {
     controls.classList.remove('hidden');
     list.classList.remove('hidden');
     detail.classList.add('hidden', 'page-hidden');
-    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile'].includes(page));
+    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends'].includes(page));
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
     filters.classList.toggle('page-hidden', page !== 'library');
     stats.classList.toggle('page-hidden', page !== 'stats');
     if (quotesSection) quotesSection.classList.toggle('page-hidden', page !== 'quotes');
     if (profileSection) profileSection.classList.toggle('page-hidden', page !== 'profile');
+    if (friendsSection) friendsSection.classList.toggle('page-hidden', page !== 'friends');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {
       item.classList.toggle('active', item.dataset.page === page);
     });
 
     if (page === 'add') document.getElementById('mode-isbn')?.click();
+    if (page === 'friends') window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
     window.history.replaceState(null, '', page === 'library' ? window.location.pathname : `#${page}`);
   };
 
@@ -801,7 +908,7 @@ async function initializeApp() {
   });
 
   const initialPage = window.location.hash.slice(1);
-  setPage(['add', 'stats', 'quotes', 'profile'].includes(initialPage) ? initialPage : 'library');
+  setPage(['add', 'stats', 'quotes', 'profile', 'friends'].includes(initialPage) ? initialPage : 'library');
 
   const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
@@ -857,6 +964,7 @@ async function initializeApp() {
         setupRealtimeSubscription(() => {
           render();
         });
+        window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
       } catch (err) {
         console.warn('Background sync error:', err);
       }

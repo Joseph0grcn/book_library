@@ -8,6 +8,7 @@ Kitap Kütüphanem, kişisel kitap koleksiyonunu takip etmek için hazırlanmı�
 
 - Manuel kitap ekleme
 - E-posta doğrulamalı hesap ve Google ile giriş
+- Kullanıcı adıyla arkadaş arama, arkadaşlık isteği ve arkadaş listesi
 - ISBN / barkod ile otomatik kitap bilgisi çekme
 - Google Books ve Open Library Search fallback ile ISBN araması
 - Kamera erişimi ile barkod tarama
@@ -72,7 +73,7 @@ Supabase ayarları yoksa veya bağlantı başarısızsa uygulamayı "Yerel Modda
 
 1. Supabase projesi oluşturun.
 2. SQL Editor'da `supabase-schema.sql` dosyasını çalıştırın.
-   Bu şema kitapların yanında kullanıcı profili için `profiles` tablosunu da oluşturur.
+   Bu şema kitapların yanında kullanıcı profili için `profiles` ve arkadaşlıklar için `friendships` tablolarını da oluşturur.
 3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
 4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
 5. E-posta doğrulaması kullanılıyorsa SMTP ve Redirect URL ayarlarını yapılandırın.
