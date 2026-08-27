@@ -30,7 +30,8 @@ function loadScript(src) {
 
 function injectLegacyMarkup(markup) {
   const parsed = new DOMParser().parseFromString(markup, 'text/html');
-  const root = document.getElementById('root');
+  const root = document.getElementById('legacy-runtime-root');
+  root.textContent = '';
   Array.from(parsed.body.children).forEach((element) => {
     if (element.tagName !== 'SCRIPT') root.appendChild(document.importNode(element, true));
   });
@@ -67,5 +68,5 @@ export default function LegacyApp() {
   if (error) {
     return <main className="react-runtime-error"><h1>Kitap Kütüphanem</h1><p>{error}</p><a href="/legacy.html">Fallback uygulamayı aç</a></main>;
   }
-  return <div className="legacy-runtime-loading" aria-live="polite">Uygulama yükleniyor...</div>;
+  return <div id="legacy-runtime-root" className="legacy-runtime-loading" aria-live="polite">Uygulama yükleniyor...</div>;
 }
