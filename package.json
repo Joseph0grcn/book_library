@@ -10,7 +10,7 @@
     "check": "node scripts/check.mjs",
     "test": "node --test",
     "lint": "eslint .",
-    "format:check": "prettier --check README.md docs package.json eslint.config.js scripts tests"
+    "format:check": "prettier --check README.md docs package.json eslint.config.js scripts tests src vite.config.js"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.0",

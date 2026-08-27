@@ -8,8 +8,8 @@ export default defineConfig({
       input: {
         index: 'index.html',
         legacy: 'legacy.html',
-        react: 'react.html'
-      }
-    }
-  }
+        react: 'react.html',
+      },
+    },
+  },
 });

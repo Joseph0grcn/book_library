@@ -867,6 +867,20 @@ function setup() {
   document.getElementById('tag-filter').addEventListener('input', render);
   document.getElementById('year-from-filter').addEventListener('input', render);
   document.getElementById('year-to-filter').addEventListener('input', render);
+  document.addEventListener('keydown', (event) => {
+    const target = event.target;
+    const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+    if (event.key === '/' && !isTyping) {
+      event.preventDefault();
+      document.getElementById('search')?.focus();
+    }
+    if (event.key === 'Escape') {
+      document.getElementById('filter-menu')?.classList.remove('is-open');
+      document.getElementById('actions-menu')?.classList.remove('is-open');
+      document.getElementById('filter-menu-toggle')?.setAttribute('aria-expanded', 'false');
+      document.getElementById('actions-menu-toggle')?.setAttribute('aria-expanded', 'false');
+    }
+  });
   progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
   readingStatus.addEventListener('change', () => {
     if (readingStatus.value === 'read') progress.value = 100;

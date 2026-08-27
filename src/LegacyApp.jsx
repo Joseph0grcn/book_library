@@ -4,7 +4,7 @@ import '../supabase-config.js';
 const externalScripts = [
   'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js',
   'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
 ];
 
 function loadScript(src) {
@@ -62,11 +62,23 @@ export default function LegacyApp() {
     }
 
     startLegacyRuntime();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (error) {
-    return <main className="react-runtime-error"><h1>Kitap Kütüphanem</h1><p>{error}</p><a href="/legacy.html">Fallback uygulamayı aç</a></main>;
+    return (
+      <main className="react-runtime-error">
+        <h1>Kitap Kütüphanem</h1>
+        <p>{error}</p>
+        <a href="/legacy.html">Fallback uygulamayı aç</a>
+      </main>
+    );
   }
-  return <div id="legacy-runtime-root" className="legacy-runtime-loading" aria-live="polite">Uygulama yükleniyor...</div>;
+  return (
+    <div id="legacy-runtime-root" className="legacy-runtime-loading" aria-live="polite">
+      Uygulama yükleniyor...
+    </div>
+  );
 }

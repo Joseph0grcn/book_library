@@ -49,6 +49,59 @@ body > iframe {
   display: none !important;
 }
 
+.legacy-runtime-loading,
+.react-runtime-error {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.legacy-runtime-loading {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: library-spin 0.8s linear infinite;
+}
+
+.react-runtime-error {
+  color: var(--text);
+}
+
+.react-runtime-error p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.react-runtime-error a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+@keyframes library-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 #app {
   display: none;
 }
@@ -572,6 +625,14 @@ textarea:focus-visible,
 .card:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--primary) 42%, transparent);
   outline-offset: 2px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {

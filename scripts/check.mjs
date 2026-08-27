@@ -15,7 +15,8 @@ function collectJavaScript(directory) {
 
 collectJavaScript(path.join(root, 'js'));
 jsFiles.push(path.join(root, 'sw.js'));
-if (existsSync(path.join(root, 'public', 'sw.js'))) jsFiles.push(path.join(root, 'public', 'sw.js'));
+if (existsSync(path.join(root, 'public', 'sw.js')))
+  jsFiles.push(path.join(root, 'public', 'sw.js'));
 
 for (const file of jsFiles) {
   execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
