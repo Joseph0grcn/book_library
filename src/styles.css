@@ -1,0 +1,42 @@
+:root {
+  font-family: "Segoe UI", sans-serif;
+  color: #19332f;
+  background: #edf4f1;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button { font: inherit; }
+
+.react-shell { width: min(100% - 32px, 1080px); margin: 0 auto; padding: 36px 0 64px; }
+.react-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.react-header h1, h2, p { margin-top: 0; }
+.react-header h1 { margin-bottom: 10px; font-family: Georgia, serif; font-size: clamp(2.2rem, 5vw, 4rem); line-height: 0.98; }
+.eyebrow { margin-bottom: 8px; color: #176b5b; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; }
+.intro, .react-hero p, .book-tile span, .empty-state, .migration-note p { color: #66807a; }
+.status-badge { padding: 9px 12px; border: 1px solid #b9d6ce; border-radius: 8px; color: #176b5b; background: #e3f0ec; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+.react-nav { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 18px; padding: 5px; border: 1px solid #d8e5e1; border-radius: 12px; background: #fff; }
+.react-nav button { flex: 0 0 auto; padding: 10px 14px; border: 0; border-radius: 8px; color: #66807a; background: transparent; cursor: pointer; }
+.react-nav button.active, .react-nav button:hover { color: #fff; background: #176b5b; }
+.react-hero, .book-preview-section, .migration-note { padding: 24px; border: 1px solid #d8e5e1; border-radius: 12px; background: #fff; box-shadow: 0 10px 30px rgba(29, 70, 62, 0.08); }
+.react-hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.react-hero h2 { max-width: 620px; margin-bottom: 8px; font-family: Georgia, serif; font-size: clamp(1.6rem, 3vw, 2.6rem); }
+.react-stats { display: grid; grid-template-columns: repeat(3, minmax(78px, 1fr)); gap: 10px; min-width: 300px; }
+.react-stats div { display: grid; gap: 4px; padding: 12px; border-radius: 8px; background: #e3f0ec; }
+.react-stats strong { color: #176b5b; font-family: Georgia, serif; font-size: 1.8rem; }
+.react-stats span, .section-heading span { color: #66807a; font-size: 0.76rem; }
+.book-preview-section { margin-top: 16px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.section-heading h2 { margin: 0; font-size: 1.1rem; }
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.book-tile { display: grid; gap: 6px; min-height: 88px; padding: 14px; border: 1px solid #d8e5e1; border-radius: 8px; background: #f8fbfa; }
+.book-tile strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.migration-note { margin-top: 16px; }
+
+@media (max-width: 700px) {
+  .react-shell { width: min(100% - 24px, 1080px); padding-top: 20px; }
+  .react-header, .react-hero { align-items: flex-start; flex-direction: column; }
+  .react-stats { width: 100%; min-width: 0; }
+  .status-badge { white-space: normal; }
+}

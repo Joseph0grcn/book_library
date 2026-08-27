@@ -50,6 +50,14 @@ Arkadaşlıklar `friendships` tablosunda `pending`, `accepted` veya `declined` d
 
 Akış gönderileri `feed_posts` tablosunda kitap bilgilerinin paylaşım anındaki özeti olarak tutulur. Gönderiler yalnızca gönderi sahibi ve `accepted` durumundaki arkadaşları tarafından okunabilir; kitapların özel `notes`, `review` ve ilerleme alanları akışa aktarılmaz.
 
+## React geçişi
+
+React/Vite altyapısı kademeli geçiş için eklenmiştir. Eski uygulama `index.html` ile çalışmaya devam eder; React önizlemesi `react.html` girişinden açılır. Geliştirme için `npm run dev`, üretim doğrulaması için `npm run build` kullanılır.
+
+React kodu `src/` altında tutulur. İlk React yüzü mevcut localStorage kitaplarını yalnızca okur; Supabase, auth, tarayıcı ve sosyal özellikler taşınmadan önce veri erişimi ayrı bir React uyumlu katmana ayrılmalıdır. Eski `js/` modüllerini doğrudan bileşen içinde DOM manipülasyonu için kullanmayın.
+
+Taşıma sırası: ortak veri sözleşmeleri, kitaplık ve kitap kartları, kitap ayrıntısı/modal akışı, profil ve arkadaşlıklar, akış, en son kamera/OCR ve PWA entegrasyonu. Her adımda eski girişin çalıştığı, `npm run build`, `npm run check`, `npm test` ve `npm run lint` kontrolleri doğrulanmalıdır.
+
 ## Geliştirme kuralları
 
 1. Uygulama için build sistemi yoktur; dosyalar tarayıcı ES modülleri olarak doğrudan çalışır. Kalite araçları Node.js üzerinden çalışır.
