@@ -52,7 +52,7 @@ Akış gönderileri `feed_posts` tablosunda kitap bilgilerinin paylaşım anınd
 
 ## React geçişi
 
-React/Vite altyapısı kademeli geçiş için eklenmiştir. Ana giriş `index.html` üzerinden React tarafından başlatılır; mevcut işlevler geçici `LegacyApp` uyumluluk katmanı ile `legacy.html` içinden yüklenir. React önizlemesi `react.html` girişinden açılır. Geliştirme için `npm run dev`, üretim doğrulaması için `npm run build` kullanılır.
+React/Vite altyapısı kademeli geçiş için eklenmiştir. Ana giriş `index.html` üzerinden React tarafından başlatılır; mevcut işlevler geçici `LegacyApp` uyumluluk katmanı ile `legacy.html` içinden yüklenir. Uygulama rotaları `/feed`, `/library`, `/add`, `/stats`, `/quotes`, `/profile` ve `/friends` olarak Netlify üzerinde ayrı URL'lerdir. React önizlemesi `react.html` girişinden açılır. Geliştirme için `npm run dev`, üretim doğrulaması için `npm run build` kullanılır.
 
 React kodu `src/` altında tutulur. İlk React yüzü mevcut localStorage kitaplarını yalnızca okur; Supabase, auth, tarayıcı ve sosyal özellikler taşınmadan önce veri erişimi ayrı bir React uyumlu katmana ayrılmalıdır. Eski `js/` modüllerini doğrudan bileşen içinde DOM manipülasyonu için kullanmayın.
 

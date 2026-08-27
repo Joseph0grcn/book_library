@@ -1040,7 +1040,8 @@ async function initializeApp() {
     if (page === 'add') document.getElementById('mode-isbn')?.click();
     if (page === 'friends') window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
     if (page === 'feed') window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
-    window.history.replaceState(null, '', page === 'library' ? window.location.pathname : `#${page}`);
+    const pagePath = page === 'library' ? '/' : `/${page}`;
+    if (window.location.pathname !== pagePath) window.history.replaceState(null, '', pagePath);
   };
 
   window.addEventListener('book-library:navigate', (event) => setPage(event.detail?.page || 'library'));
@@ -1052,12 +1053,13 @@ async function initializeApp() {
         supabaseClient?.auth.signOut();
         return;
       }
-      setPage(targetPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const route = targetPage === 'library' ? '/' : `/${targetPage}`;
+      window.location.assign(route);
     });
   });
 
-  const initialPage = window.location.hash.slice(1);
+  const pathPage = window.location.pathname.replace(/^\/+/, '').split('/')[0];
+  const initialPage = pathPage || window.location.hash.slice(1);
   setPage(['feed', 'add', 'stats', 'quotes', 'profile', 'friends'].includes(initialPage) ? initialPage : 'feed');
 
   const toggleMenu = (menu, toggle, event) => {

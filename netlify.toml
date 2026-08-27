@@ -2,3 +2,38 @@
   publish = "dist"
   command = "npm run build"
   functions = "netlify/functions"
+
+[[redirects]]
+  from = "/feed"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/library"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/add"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/stats"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/quotes"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/profile"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/friends"
+  to = "/index.html"
+  status = 200
