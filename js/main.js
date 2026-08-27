@@ -300,6 +300,12 @@ function setup() {
         ${post.caption ? `<p class="feed-caption">${escapeHtml(post.caption)}</p>` : ''}
       </article>`;
     }).join('');
+    feedList.querySelectorAll('.feed-post-author').forEach((author, index) => {
+      const post = feedPosts[index];
+      author.dataset.feedProfile = post?.profile?.userId || post?.user_id || '';
+      author.setAttribute('role', 'button');
+      author.tabIndex = 0;
+    });
   }
 
   async function refreshFeed() {
@@ -837,6 +843,11 @@ function setup() {
   incomingFriends.addEventListener('click', handleFriendAction);
   refreshFeedButton.addEventListener('click', refreshFeed);
   feedList.addEventListener('click', (event) => {
+    const profileLink = event.target.closest('[data-feed-profile]');
+    if (profileLink) {
+      openFriendProfile(profileLink.dataset.feedProfile);
+      return;
+    }
     const coverButton = event.target.closest('[data-feed-cover]');
     if (!coverButton) return;
     openCoverModal(coverButton.dataset.feedCover, coverButton.dataset.feedTitle || 'Kitap kapağı');

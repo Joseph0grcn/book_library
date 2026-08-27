@@ -1993,6 +1993,15 @@ button.danger:hover {
   color: var(--primary);
 }
 
+.feed-post-author[data-feed-profile] {
+  cursor: pointer;
+}
+
+.feed-post-author[data-feed-profile]:hover strong,
+.feed-post-author[data-feed-profile]:focus-visible strong {
+  color: var(--primary);
+}
+
 .friend-books-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
