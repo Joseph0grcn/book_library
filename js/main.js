@@ -1196,6 +1196,26 @@ async function initializeApp() {
     button.addEventListener('click', () => button.closest('.mock-ad')?.remove());
   });
 
+  const mockAdLinks = [
+    { name: 'Endbaş Elektronik', handle: '@endbas_elektronik', url: 'https://www.instagram.com/endbas_elektronik/', label: 'ENDBAŞ ELEKTRONİK', art: 'E', detail: 'ELEKTRONİK', copy: 'Markayı ve güncel paylaşımları Instagram hesabında keşfet.' },
+    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.instagram.com/dreamlayerstr/', label: 'DREAM LAYERS', art: 'DL', detail: 'LAYERS', copy: 'Markanın dünyasını ve yeni paylaşımlarını Instagram hesabında keşfet.' }
+  ];
+  document.querySelectorAll('.mock-ad-rail').forEach((ad, index) => {
+    const content = mockAdLinks[index];
+    if (!content) return;
+    ad.querySelector('.mock-ad-label').textContent = `SPONSORLU · ${content.label}`;
+    ad.querySelector('.mock-ad-art span').textContent = content.label.split(' ')[0];
+    ad.querySelector('.mock-ad-art strong').textContent = content.art;
+    ad.querySelector('.mock-ad-art small').textContent = content.detail;
+    ad.querySelector('.mock-ad-art + strong').textContent = content.name;
+    ad.querySelector('.mock-ad-art + strong + span').textContent = content.copy;
+    ad.querySelector('.mock-ad-meta span:first-child').textContent = 'Instagram';
+    ad.querySelector('.mock-ad-meta span:last-child').textContent = content.handle;
+    const action = ad.querySelector('.mock-ad-action');
+    action.textContent = 'Instagram’da gör';
+    action.addEventListener('click', () => window.open(content.url, '_blank', 'noopener,noreferrer'));
+  });
+
   googleLoginButton?.addEventListener('click', async () => {
     if (!supabaseClient) {
       showToast('Supabase ayarları tanımlanmamış.', 'error');
