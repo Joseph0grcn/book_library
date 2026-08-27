@@ -6,7 +6,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        legacy: 'index.html',
+        index: 'index.html',
+        legacy: 'legacy.html',
         react: 'react.html'
       }
     }
