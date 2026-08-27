@@ -86,6 +86,11 @@ export function showAuthErrorModal(errorMessage) {
   modal.classList.remove('hidden');
 }
 
+function getAuthRedirectUrl() {
+  const configuredUrl = String(window.APP_URL || '').trim().replace(/\/+$/, '');
+  return configuredUrl || window.location.origin;
+}
+
 
 function setup() {
   const form = document.getElementById('book-form');
@@ -744,6 +749,7 @@ async function initializeApp() {
   });
 
   const guestBtn = document.getElementById('auth-guest');
+  const googleLoginButton = document.getElementById('auth-google');
 
   const showApp = async (session = null) => {
     setActiveUser(session ? session.user : null);
@@ -819,7 +825,8 @@ async function initializeApp() {
     try {
       const { data, error } = await supabaseClient.auth.signUp({
         email: document.getElementById('auth-email').value.trim(),
-        password: document.getElementById('auth-password').value
+        password: document.getElementById('auth-password').value,
+        options: { emailRedirectTo: getAuthRedirectUrl() }
       });
       if (error) {
         authStatus.textContent = 'Kayıt Hatası: ' + error.message;
@@ -840,6 +847,28 @@ async function initializeApp() {
       authStatus.style.color = 'var(--danger)';
       showToast('Kayıt Başarısız: ' + err.message, 'error');
       showAuthErrorModal(err.message);
+    }
+  });
+
+  googleLoginButton?.addEventListener('click', async () => {
+    if (!supabaseClient) {
+      showToast('Supabase ayarları tanımlanmamış.', 'error');
+      return;
+    }
+
+    authStatus.textContent = 'Google giriş sayfası açılıyor...';
+    authStatus.style.color = 'var(--muted)';
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: getAuthRedirectUrl() }
+      });
+      if (error) throw error;
+    } catch (error) {
+      authStatus.textContent = 'Google giriş hatası: ' + error.message;
+      authStatus.style.color = 'var(--danger)';
+      showToast('Google ile giriş yapılamadı: ' + error.message, 'error');
+      showAuthErrorModal(error.message);
     }
   });
 

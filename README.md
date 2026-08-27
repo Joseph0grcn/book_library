@@ -7,6 +7,7 @@ Kitap Kütüphanem, kişisel kitap koleksiyonunu takip etmek için hazırlanmı�
 - Hızlı kitap ekleme: kamerayla art arda ISBN toplama ve sırayla formdan kaydetme
 
 - Manuel kitap ekleme
+- E-posta doğrulamalı hesap ve Google ile giriş
 - ISBN / barkod ile otomatik kitap bilgisi çekme
 - Google Books ve Open Library Search fallback ile ISBN araması
 - Kamera erişimi ile barkod tarama
@@ -74,6 +75,16 @@ Supabase ayarları yoksa veya bağlantı başarısızsa uygulamayı "Yerel Modda
 3. Project Settings > API bölümündeki Project URL ve anon public key değerlerini `supabase-config.js` içine yazın.
 4. Supabase Authentication > URL Configuration bölümünde canlı Netlify adresini Site URL olarak ekleyin.
 5. E-posta doğrulaması kullanılıyorsa SMTP ve Redirect URL ayarlarını yapılandırın.
+
+### Auth yönlendirmesi ve Google ile giriş
+
+Kayıt doğrulama bağlantısı ve Google girişi, uygulamanın açıldığı alan adına otomatik olarak yönlendirilir. Farklı bir sabit alan adı kullanmak isterseniz `supabase-config.js` içine şu satırı ekleyin:
+
+```js
+window.APP_URL = 'https://sitenizin-adresi.example';
+```
+
+Supabase Dashboard > Authentication > URL Configuration bölümünde canlı adresi Redirect URLs listesine ekleyin. Google girişi için Authentication > Providers > Google bölümünü etkinleştirip Google Cloud Console'dan Web OAuth Client ID ve Client Secret değerlerini Supabase'e girin. Google Cloud tarafındaki Authorized redirect URI olarak Supabase panelinde gösterilen callback adresini kullanın; bu proje için adres genellikle `https://<proje-referansi>.supabase.co/auth/v1/callback` biçimindedir.
 
 `supabase-config.js` yalnızca frontend için tasarlanmış public anon key içermelidir. Service role key'i bu dosyaya koymayın.
 
