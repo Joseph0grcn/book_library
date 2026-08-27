@@ -253,6 +253,82 @@ h1 {
   flex: 1 1 100%;
 }
 
+.mock-ad {
+  position: relative;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.mock-ad strong,
+.mock-ad span {
+  display: block;
+}
+
+.mock-ad strong {
+  margin: 8px 0 5px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.mock-ad-label {
+  color: var(--primary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.mock-ad-rail {
+  position: fixed;
+  top: 190px;
+  z-index: 4;
+  display: none;
+  width: 138px;
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.mock-ad-left {
+  left: max(18px, calc(50% - 680px));
+}
+
+.mock-ad-right {
+  right: max(18px, calc(50% - 680px));
+}
+
+.mock-ad-close {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mock-ad-mobile {
+  display: none;
+  margin: 14px 0;
+  padding: 12px 42px 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+}
+
+@media (min-width: 1360px) {
+  .mock-ad-rail {
+    display: block;
+  }
+}
+
 .isbn-step-copy {
   display: flex;
   flex: 1 1 100%;
@@ -2360,6 +2436,10 @@ button.danger:hover {
 }
 
 @media (max-width: 640px) {
+  .mock-ad-mobile {
+    display: block;
+  }
+
   .feed-section {
     margin-top: 0;
   }
