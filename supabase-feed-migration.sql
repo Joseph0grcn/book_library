@@ -78,22 +78,42 @@ alter table public.feed_comments enable row level security;
 
 drop policy if exists "Users can view visible post likes" on public.feed_post_likes;
 create policy "Users can view visible post likes" on public.feed_post_likes for select using (
-  exists (select 1 from public.feed_posts where id = post_id)
+  exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = user_id
+    or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
 );
 drop policy if exists "Users can like visible posts" on public.feed_post_likes;
 create policy "Users can like visible posts" on public.feed_post_likes for insert with check (
-  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id)
+  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = feed_posts.user_id
+    or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
 );
 drop policy if exists "Users can remove their likes" on public.feed_post_likes;
 create policy "Users can remove their likes" on public.feed_post_likes for delete using (auth.uid() = user_id);
 
 drop policy if exists "Users can view visible post comments" on public.feed_comments;
 create policy "Users can view visible post comments" on public.feed_comments for select using (
-  exists (select 1 from public.feed_posts where id = post_id)
+  exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = user_id
+    or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
 );
 drop policy if exists "Users can comment on visible posts" on public.feed_comments;
 create policy "Users can comment on visible posts" on public.feed_comments for insert with check (
-  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id)
+  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = feed_posts.user_id
+    or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
 );
 drop policy if exists "Users can delete their comments" on public.feed_comments;
 create policy "Users can delete their comments" on public.feed_comments for delete using (auth.uid() = user_id);

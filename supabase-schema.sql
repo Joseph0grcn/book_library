@@ -172,3 +172,55 @@ create index books_created_at_idx on public.books(created_at desc);
 -- 6. Supabase Realtime (Canlı Cihaz Eşitleme) Yayınına Ekleme
 alter publication supabase_realtime add table public.books;
 alter publication supabase_realtime add table public.feed_posts;
+
+-- 7. AkÄ±ÅŸ beÄŸeni ve yorumlarÄ±
+create table public.feed_post_likes (
+  post_id text not null references public.feed_posts(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+
+create table public.feed_comments (
+  id text primary key,
+  post_id text not null references public.feed_posts(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+alter table public.feed_post_likes enable row level security;
+alter table public.feed_comments enable row level security;
+
+create policy "Users can view visible post likes" on public.feed_post_likes for select using (
+  exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = user_id or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
+);
+create policy "Users can like visible posts" on public.feed_post_likes for insert with check (
+  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = feed_posts.user_id or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
+);
+create policy "Users can remove their likes" on public.feed_post_likes for delete using (auth.uid() = user_id);
+create policy "Users can view visible post comments" on public.feed_comments for select using (
+  exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = user_id or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
+);
+create policy "Users can comment on visible posts" on public.feed_comments for insert with check (
+  auth.uid() = user_id and exists (select 1 from public.feed_posts where id = post_id and (
+    auth.uid() = feed_posts.user_id or exists (select 1 from public.friendships where status = 'accepted'
+      and ((requester_id = auth.uid() and addressee_id = feed_posts.user_id)
+        or (addressee_id = auth.uid() and requester_id = feed_posts.user_id)))
+  ))
+);
+create policy "Users can delete their comments" on public.feed_comments for delete using (auth.uid() = user_id);
+create index feed_post_likes_post_idx on public.feed_post_likes(post_id);
+create index feed_comments_post_created_idx on public.feed_comments(post_id, created_at);
