@@ -248,6 +248,7 @@ export function render() {
   const statusFilter = document.getElementById('status-filter')?.value || 'all';
   const ratingFilter = document.getElementById('rating-filter')?.value || 'all';
   const shelfFilter = document.getElementById('shelf-filter')?.value || 'all';
+  const smartFilter = document.getElementById('smart-filter')?.value || 'all';
   const formatFilter = document.getElementById('format-filter')?.value || 'all';
   const tagQuery = (document.getElementById('tag-filter')?.value || '').trim().toLowerCase();
   const yearFrom = Number(document.getElementById('year-from-filter')?.value) || 0;
@@ -259,6 +260,14 @@ export function render() {
     if (statusFilter !== 'all' && book.status !== statusFilter) return false;
     if (ratingFilter !== 'all' && book.rating < Number(ratingFilter)) return false;
     if (shelfFilter !== 'all' && book.shelf !== shelfFilter) return false;
+    if (smartFilter === 'reading' && book.status !== 'reading') return false;
+    if (smartFilter === 'top-rated' && book.rating < 4) return false;
+    if (smartFilter === 'recent-read') {
+      if (book.status !== 'read' && !book.read) return false;
+      const completedAt = new Date(book.finishDate || book.createdAt);
+      const now = new Date();
+      if (completedAt.getFullYear() !== now.getFullYear() || completedAt.getMonth() !== now.getMonth()) return false;
+    }
     const metadata = book.metadata || {};
     const format = String(metadata.physical_format || metadata.printType || '').toLowerCase();
     if (formatFilter !== 'all' && !format.includes(formatFilter)) return false;

@@ -873,6 +873,7 @@ function setup() {
   document.getElementById('status-filter').addEventListener('change', render);
   document.getElementById('rating-filter').addEventListener('change', render);
   document.getElementById('shelf-filter').addEventListener('change', render);
+  document.getElementById('smart-filter').addEventListener('change', render);
   document.getElementById('format-filter').addEventListener('change', render);
   document.getElementById('tag-filter').addEventListener('input', render);
   document.getElementById('year-from-filter').addEventListener('input', render);
