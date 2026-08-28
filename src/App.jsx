@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'book_library_books';
+const QUOTES_KEY = 'book_library_quotes';
+const PROFILE_KEY = 'book_library_profile';
 const navigation = [
+  { id: 'feed', label: 'Akış' },
   { id: 'library', label: 'Kitaplığım' },
   { id: 'add', label: 'Kitap ekle' },
   { id: 'stats', label: 'İstatistikler' },
+  { id: 'quotes', label: 'Alıntılar' },
+  { id: 'profile', label: 'Profilim' },
+  { id: 'friends', label: 'Arkadaşlar' },
 ];
 
 function readBooks() {
@@ -67,6 +73,12 @@ function App() {
         ))}
       </nav>
       <main>
+        {page === 'feed' && (
+          <InfoPage
+            title="Akış"
+            text="Arkadaşlarının kitap paylaşımları React ekranına taşınıyor."
+          />
+        )}
         {page === 'library' && (
           <LibraryPage books={books} onSelect={setSelectedBook} onNavigate={navigate} />
         )}
@@ -79,6 +91,14 @@ function App() {
           />
         )}
         {page === 'stats' && <StatsPage books={books} />}
+        {page === 'quotes' && <QuotesPage />}
+        {page === 'profile' && <ProfilePage />}
+        {page === 'friends' && (
+          <InfoPage
+            title="Arkadaşlar"
+            text="Arkadaş arama ve kütüphane paylaşımı bir sonraki React geçiş adımında bağlanacak."
+          />
+        )}
       </main>
       {selectedBook && <BookDetail book={selectedBook} onClose={() => setSelectedBook(null)} />}
     </div>
@@ -239,6 +259,101 @@ function StatsPage({ books }) {
           <span>Ortalama ilerleme</span>
         </div>
       </div>
+    </section>
+  );
+}
+
+function QuotesPage() {
+  const [quotes, setQuotes] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(QUOTES_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [text, setText] = useState('');
+  const addQuote = (event) => {
+    event.preventDefault();
+    if (!text.trim()) return;
+    const next = [{ id: Date.now(), text: text.trim() }, ...quotes];
+    localStorage.setItem(QUOTES_KEY, JSON.stringify(next));
+    setQuotes(next);
+    setText('');
+  };
+  return (
+    <section className="react-page">
+      <p className="eyebrow">NOTLAR</p>
+      <h2>Alıntılarım</h2>
+      <form className="react-form" onSubmit={addQuote}>
+        <label>
+          Yeni alıntı
+          <textarea value={text} onChange={(event) => setText(event.target.value)} required />
+        </label>
+        <button type="submit">Alıntıyı kaydet</button>
+      </form>
+      <div className="react-quote-list">
+        {quotes.length ? (
+          quotes.map((quote) => <blockquote key={quote.id}>{quote.text}</blockquote>)
+        ) : (
+          <div className="react-empty">
+            <span>Henüz alıntı eklenmedi.</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ProfilePage() {
+  const [profile, setProfile] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const save = (event) => {
+    event.preventDefault();
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  };
+  return (
+    <section className="react-page narrow-page">
+      <p className="eyebrow">KİŞİSEL ALAN</p>
+      <h2>Profilim</h2>
+      <form className="react-form" onSubmit={save}>
+        <label>
+          Görünen ad
+          <input
+            value={profile.displayName || ''}
+            onChange={(event) => setProfile({ ...profile, displayName: event.target.value })}
+          />
+        </label>
+        <label>
+          Kullanıcı adı
+          <input
+            value={profile.username || ''}
+            onChange={(event) => setProfile({ ...profile, username: event.target.value })}
+          />
+        </label>
+        <label>
+          Biyografi
+          <textarea
+            value={profile.bio || ''}
+            onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+          />
+        </label>
+        <button type="submit">Profili kaydet</button>
+      </form>
+    </section>
+  );
+}
+
+function InfoPage({ title, text }) {
+  return (
+    <section className="react-page">
+      <p className="eyebrow">REACT GEÇİŞİ</p>
+      <h2>{title}</h2>
+      <p className="migration-copy">{text}</p>
     </section>
   );
 }

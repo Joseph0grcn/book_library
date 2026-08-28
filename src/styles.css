@@ -201,13 +201,18 @@ p {
   margin-bottom: 18px;
 }
 .react-search input,
-.react-form input {
+.react-form input,
+.react-form textarea {
   width: 100%;
   padding: 11px 12px;
   border: 1px solid #b9d6ce;
   border-radius: 8px;
   color: #19332f;
   background: #f8fbfa;
+}
+.react-form textarea {
+  min-height: 120px;
+  resize: vertical;
 }
 .book-tile {
   display: grid;
@@ -241,6 +246,24 @@ p {
   padding: 28px 12px;
   text-align: center;
   color: #66807a;
+}
+.migration-copy {
+  max-width: 620px;
+  margin-top: 12px;
+  color: #66807a;
+}
+.react-quote-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+.react-quote-list blockquote {
+  margin: 0;
+  padding: 16px 18px;
+  border-left: 4px solid #176b5b;
+  border-radius: 0 8px 8px 0;
+  color: #19332f;
+  background: #e3f0ec;
 }
 .react-form {
   display: grid;
