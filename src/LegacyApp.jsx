@@ -27,6 +27,8 @@ function loadScript(src) {
 function injectLegacyMarkup(markup) {
   const parsed = new DOMParser().parseFromString(markup, 'text/html');
   const root = document.getElementById('legacy-runtime-root');
+  root.classList.remove('legacy-runtime-loading');
+  root.classList.add('app-booting');
   root.textContent = '';
   Array.from(parsed.body.children).forEach((element) => {
     if (element.tagName !== 'SCRIPT') root.appendChild(document.importNode(element, true));

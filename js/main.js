@@ -1040,6 +1040,11 @@ async function initializeApp() {
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
+  const finishBoot = () => {
+    document.body.classList.remove('app-booting');
+    document.getElementById('legacy-runtime-root')?.classList.remove('app-booting');
+  };
+
   const setPage = (page) => {
     // Detail view temporarily adds `hidden`; clear that transient state whenever a tab changes.
     controls.classList.remove('hidden');
@@ -1112,6 +1117,7 @@ async function initializeApp() {
 
   const showApp = async (session = null) => {
     setActiveUser(session ? session.user : null);
+    finishBoot();
     authGate.style.display = 'none';
     app.style.display = 'block';
 
@@ -1300,6 +1306,7 @@ async function initializeApp() {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) await showApp(session);
+      else finishBoot();
 
       supabaseClient.auth.onAuthStateChange(async (_event, nextSession) => {
         if (nextSession) {
@@ -1315,6 +1322,7 @@ async function initializeApp() {
     }
   } else {
     authStatus.textContent = 'Supabase istemcisi bağlanamadı. Dilerseniz Yerel Modda kullanabilirsiniz.';
+    finishBoot();
   }
 }
 
