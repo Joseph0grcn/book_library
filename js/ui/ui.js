@@ -246,6 +246,18 @@ export function render() {
   if (topGenreEl) topGenreEl.textContent = topGenre;
   if (topGenreCountEl) topGenreCountEl.textContent = `${maxGenreCount} kitap`;
 
+  const statusBreakdown = document.getElementById('status-breakdown');
+  if (statusBreakdown) {
+    const counts = { read: books.filter((book) => book.status === 'read' || book.read).length, reading: books.filter((book) => book.status === 'reading').length, unread: books.filter((book) => book.status === 'unread' && !book.read).length };
+    const labels = { read: 'Okundu', reading: 'Okunuyor', unread: 'Okunacak' };
+    statusBreakdown.innerHTML = Object.entries(counts).map(([key, count]) => `<div class="stats-bar-row"><span>${labels[key]}</span><div class="stats-bar"><i style="width: ${books.length ? Math.round((count / books.length) * 100) : 0}%"></i></div><strong>${count}</strong></div>`).join('');
+  }
+  const topRatedBooks = document.getElementById('top-rated-books');
+  if (topRatedBooks) {
+    const rated = books.filter((book) => book.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 5);
+    topRatedBooks.innerHTML = rated.length ? rated.map((book) => `<li><span>${escapeHtmlUi(book.title)}</span><strong>★ ${book.rating}</strong></li>`).join('') : '<li class="muted">Henüz puanlanmış kitap yok.</li>';
+  }
+
   // Render Badges & Quotes
   renderBadges(books);
   renderQuotes();
