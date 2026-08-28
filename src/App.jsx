@@ -80,7 +80,17 @@ function App() {
           />
         )}
         {page === 'library' && (
-          <LibraryPage books={books} onSelect={setSelectedBook} onNavigate={navigate} />
+          <LibraryPage
+            books={books}
+            onSelect={setSelectedBook}
+            onNavigate={navigate}
+            onUpdate={(updated) => {
+              const next = books.map((book) => (book.id === updated.id ? updated : book));
+              saveBooks(next);
+              setSelectedBook(updated);
+            }}
+            onDelete={(id) => saveBooks(books.filter((book) => book.id !== id))}
+          />
         )}
         {page === 'add' && (
           <AddPage
@@ -100,12 +110,22 @@ function App() {
           />
         )}
       </main>
-      {selectedBook && <BookDetail book={selectedBook} onClose={() => setSelectedBook(null)} />}
+      {selectedBook && (
+        <BookDetail
+          book={selectedBook}
+          onClose={() => setSelectedBook(null)}
+          onUpdate={(updated) => {
+            const next = books.map((book) => (book.id === updated.id ? updated : book));
+            saveBooks(next);
+            setSelectedBook(updated);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function LibraryPage({ books, onSelect, onNavigate }) {
+function LibraryPage({ books, onSelect, onNavigate, onUpdate, onDelete }) {
   const [query, setQuery] = useState('');
   const visibleBooks = useMemo(
     () =>
@@ -137,27 +157,55 @@ function LibraryPage({ books, onSelect, onNavigate }) {
       {visibleBooks.length ? (
         <div className="book-grid">
           {visibleBooks.map((book) => (
-            <button
-              className="book-tile"
-              type="button"
-              key={book.id}
-              onClick={() => onSelect(book)}
-            >
-              {coverFor(book) ? (
-                <img src={coverFor(book)} alt="" loading="lazy" />
-              ) : (
-                <span className="book-tile-placeholder">Kitap</span>
-              )}
-              <strong>{book.title || 'Başlıksız'}</strong>
-              <span>{book.author || 'Yazar bilinmiyor'}</span>
-              <small>
-                {book.status === 'read' || book.read
-                  ? 'Okundu'
-                  : book.status === 'reading'
-                    ? 'Okunuyor'
-                    : 'Okunacak'}
-              </small>
-            </button>
+            <article className="book-tile" key={book.id}>
+              <button className="book-tile-main" type="button" onClick={() => onSelect(book)}>
+                {coverFor(book) ? (
+                  <img src={coverFor(book)} alt="" loading="lazy" />
+                ) : (
+                  <span className="book-tile-placeholder">Kitap</span>
+                )}
+                <strong>{book.title || 'Başlıksız'}</strong>
+                <span>{book.author || 'Yazar bilinmiyor'}</span>
+                <small>
+                  {book.status === 'read' || book.read
+                    ? 'Okundu'
+                    : book.status === 'reading'
+                      ? 'Okunuyor'
+                      : 'Okunacak'}
+                </small>
+              </button>
+              <div className="book-tile-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdate({
+                      ...book,
+                      status: book.status === 'read' ? 'unread' : 'read',
+                      read: book.status !== 'read',
+                      progress: book.status === 'read' ? book.progress : 100,
+                    })
+                  }
+                >
+                  {book.status === 'read' ? 'Okunmadı' : 'Okundu'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  onClick={() => onSelect({ ...book, editing: true })}
+                >
+                  Düzenle
+                </button>
+                <button
+                  type="button"
+                  className="danger-action"
+                  onClick={() =>
+                    window.confirm('Bu kitabı silmek istediğine emin misin?') && onDelete(book.id)
+                  }
+                >
+                  Sil
+                </button>
+              </div>
+            </article>
           ))}
         </div>
       ) : (
@@ -358,7 +406,18 @@ function InfoPage({ title, text }) {
   );
 }
 
-function BookDetail({ book, onClose }) {
+function BookDetail({ book, onClose, onUpdate }) {
+  const [editing, setEditing] = useState(Boolean(book.editing));
+  const [form, setForm] = useState({
+    title: book.title || '',
+    author: book.author || '',
+    isbn: book.isbn || '',
+    progress: book.progress || 0,
+  });
+  const update = (event) => {
+    event.preventDefault();
+    onUpdate({ ...book, ...form, progress: Number(form.progress) || 0, editing: undefined });
+  };
   return (
     <div className="react-dialog-backdrop" role="presentation" onClick={onClose}>
       <section
@@ -371,34 +430,80 @@ function BookDetail({ book, onClose }) {
         <button className="dialog-close" type="button" onClick={onClose} aria-label="Kapat">
           ×
         </button>
-        {coverFor(book) && (
-          <img className="detail-cover" src={coverFor(book)} alt={`${book.title} kapak`} />
+        {editing ? (
+          <form className="react-form" onSubmit={update}>
+            <label>
+              Başlık
+              <input
+                required
+                value={form.title}
+                onChange={(event) => setForm({ ...form, title: event.target.value })}
+              />
+            </label>
+            <label>
+              Yazar
+              <input
+                value={form.author}
+                onChange={(event) => setForm({ ...form, author: event.target.value })}
+              />
+            </label>
+            <label>
+              ISBN
+              <input
+                value={form.isbn}
+                onChange={(event) => setForm({ ...form, isbn: event.target.value })}
+              />
+            </label>
+            <label>
+              İlerleme
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={form.progress}
+                onChange={(event) => setForm({ ...form, progress: event.target.value })}
+              />
+            </label>
+            <button type="submit">Değişiklikleri kaydet</button>
+            <button type="button" className="secondary-action" onClick={() => setEditing(false)}>
+              Vazgeç
+            </button>
+          </form>
+        ) : (
+          <>
+            {coverFor(book) && (
+              <img className="detail-cover" src={coverFor(book)} alt={`${book.title} kapak`} />
+            )}
+            <p className="eyebrow">KİTAP AYRINTISI</p>
+            <h2>{book.title}</h2>
+            <p className="detail-author">{book.author || 'Yazar bilinmiyor'}</p>
+            <dl>
+              <dt>Durum</dt>
+              <dd>
+                {book.status === 'read' || book.read
+                  ? 'Okundu'
+                  : book.status === 'reading'
+                    ? 'Okunuyor'
+                    : 'Okunacak'}
+              </dd>
+              {book.isbn && (
+                <>
+                  <dt>ISBN</dt>
+                  <dd>{book.isbn}</dd>
+                </>
+              )}
+              {book.progress !== undefined && (
+                <>
+                  <dt>İlerleme</dt>
+                  <dd>{book.progress}%</dd>
+                </>
+              )}
+            </dl>
+            <button type="button" onClick={() => setEditing(true)}>
+              Düzenle
+            </button>
+          </>
         )}
-        <p className="eyebrow">KİTAP AYRINTISI</p>
-        <h2>{book.title}</h2>
-        <p className="detail-author">{book.author || 'Yazar bilinmiyor'}</p>
-        <dl>
-          <dt>Durum</dt>
-          <dd>
-            {book.status === 'read' || book.read
-              ? 'Okundu'
-              : book.status === 'reading'
-                ? 'Okunuyor'
-                : 'Okunacak'}
-          </dd>
-          {book.isbn && (
-            <>
-              <dt>ISBN</dt>
-              <dd>{book.isbn}</dd>
-            </>
-          )}
-          {book.progress !== undefined && (
-            <>
-              <dt>İlerleme</dt>
-              <dd>{book.progress}%</dd>
-            </>
-          )}
-        </dl>
       </section>
     </div>
   );
