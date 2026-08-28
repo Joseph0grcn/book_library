@@ -2,6 +2,7 @@ import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
+import { csvToBooks } from './features/import.js';
 import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts, toggleFeedLike, addFeedComment } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, getBookCoverUrl, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
@@ -1018,8 +1019,9 @@ function setup() {
     if (!file) return;
     try {
       const text = await file.text();
-      const parsed = JSON.parse(text);
-      const incoming = Array.isArray(parsed) ? parsed : parsed.books;
+      const isCsv = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv';
+      const parsed = isCsv ? csvToBooks(text) : JSON.parse(text);
+      const incoming = isCsv ? parsed : (Array.isArray(parsed) ? parsed : parsed.books);
       if (!Array.isArray(incoming)) throw new Error('Geçersiz JSON formatı.');
 
       const existing = loadBooks();
