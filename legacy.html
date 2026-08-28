@@ -145,6 +145,10 @@
           </label>
           <textarea id="review" placeholder="Kısa yorum (isteğe bağlı)"></textarea>
           <textarea id="notes" placeholder="Notlar ve alıntılar (isteğe bağlı - **koyu**, *italik*, > alıntı)"></textarea>
+          <div class="loan-fields">
+            <label class="field-label"><span>Ödünç verilen kişi</span><input id="loaned-to" type="text" maxlength="100" placeholder="İsim (isteğe bağlı)" /></label>
+            <label class="field-label"><span>Geri alma tarihi</span><input id="loan-due-date" type="date" /></label>
+          </div>
           <textarea id="share-caption" class="share-caption" maxlength="500" placeholder="Akış notu (isteğe bağlı)"></textarea>
         </div>
         <button type="submit" id="save-book">Kitabı Kaydet</button>
@@ -489,6 +493,8 @@
           </label>
           <label class="field-label"><span>Okumaya Başlama Tarihi</span><input id="edit-start-date" type="date" /></label>
           <label class="field-label"><span>Bitirme Tarihi</span><input id="edit-finish-date" type="date" /></label>
+          <label class="field-label"><span>Ödünç verilen kişi</span><input id="edit-loaned-to" type="text" maxlength="100" /></label>
+          <label class="field-label"><span>Geri alma tarihi</span><input id="edit-loan-due-date" type="date" /></label>
           <label class="progress-control"><span>İlerleme <output id="edit-progress-value">0%</output></span><input id="edit-progress" type="range" min="0" max="100" step="5" value="0" /></label>
           <label class="field-label"><span>Puan</span>
             <div id="edit-rating-widget"></div>

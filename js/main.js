@@ -736,7 +736,11 @@ function setup() {
       startDate: document.getElementById('start-date').value,
       finishDate: document.getElementById('finish-date').value,
       isbn,
-      metadata
+      metadata: {
+        ...metadata,
+        loanedTo: document.getElementById('loaned-to').value.trim(),
+        loanDueDate: document.getElementById('loan-due-date').value
+      }
     });
 
     books.unshift(newBook);

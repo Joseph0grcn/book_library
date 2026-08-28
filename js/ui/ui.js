@@ -405,6 +405,8 @@ export function showBookDetail(book) {
   const publisher = Array.isArray(metadata.publishers) ? metadata.publishers.join(', ') : (metadata.publisher || '');
   const pageCount = metadata.number_of_pages || metadata.pageCount || '';
   const subjects = Array.isArray(metadata.subjects) ? metadata.subjects.join(', ') : '';
+  const loanedTo = String(metadata.loanedTo || '').trim();
+  const loanDueDate = String(metadata.loanDueDate || '').trim();
 
   controls.classList.add('hidden');
   list.classList.add('hidden');
@@ -447,7 +449,9 @@ export function showBookDetail(book) {
     ['Yayınevi', publisher],
     ['Sayfa sayısı', pageCount],
     ['Format', metadata.physical_format],
-    ['Konular', subjects]
+    ['Konular', subjects],
+    ['Ödünç verilen kişi', loanedTo],
+    ['Geri alma tarihi', loanDueDate]
   ].filter((field) => field[1] !== undefined && field[1] !== null && field[1] !== '');
   const details = document.createElement('dl');
   fields.forEach(([label, value]) => {
@@ -643,6 +647,8 @@ export function openEditModal(book) {
   document.getElementById('edit-shelf').value = book.shelf || 'owned';
   document.getElementById('edit-start-date').value = book.startDate || '';
   document.getElementById('edit-finish-date').value = book.finishDate || '';
+  document.getElementById('edit-loaned-to').value = book.metadata?.loanedTo || '';
+  document.getElementById('edit-loan-due-date').value = book.metadata?.loanDueDate || '';
   document.getElementById('edit-progress').value = book.progress;
   document.getElementById('edit-progress-value').value = `${book.progress}%`;
   document.getElementById('edit-review').value = book.review;
@@ -682,7 +688,12 @@ export async function saveEditedBook(event) {
       notes: document.getElementById('edit-notes').value.trim(),
       shelf: document.getElementById('edit-shelf').value || 'owned',
       startDate: document.getElementById('edit-start-date').value,
-      finishDate: document.getElementById('edit-finish-date').value
+      finishDate: document.getElementById('edit-finish-date').value,
+      metadata: {
+        ...(book.metadata || {}),
+        loanedTo: document.getElementById('edit-loaned-to').value.trim(),
+        loanDueDate: document.getElementById('edit-loan-due-date').value
+      }
     });
   });
 

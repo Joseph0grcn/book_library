@@ -1055,8 +1055,19 @@ button.danger:hover {
   font-size: 1.8rem;
 }
 
+.loan-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 640px) {
   .stats-reading-plan {
+    grid-template-columns: 1fr;
+  }
+
+  .loan-fields {
     grid-template-columns: 1fr;
   }
 }
