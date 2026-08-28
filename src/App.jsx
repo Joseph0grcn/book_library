@@ -1,111 +1,290 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+const STORAGE_KEY = 'book_library_books';
 const navigation = [
-  { id: 'feed', label: 'Akış' },
   { id: 'library', label: 'Kitaplığım' },
   { id: 'add', label: 'Kitap ekle' },
   { id: 'stats', label: 'İstatistikler' },
-  { id: 'profile', label: 'Profilim' },
 ];
 
 function readBooks() {
   try {
-    const stored = localStorage.getItem('book_library_books');
-    const books = stored ? JSON.parse(stored) : [];
-    return Array.isArray(books) ? books : [];
+    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
   } catch {
     return [];
   }
 }
 
-function App() {
-  const [page, setPage] = useState('library');
-  const books = useMemo(readBooks, []);
-  const readCount = books.filter((book) => book.read || book.status === 'read').length;
-  const readingCount = books.filter((book) => book.status === 'reading').length;
+function coverFor(book) {
+  const links = book.metadata?.imageLinks;
+  return links?.large || links?.medium || links?.thumbnail || links?.smallThumbnail || '';
+}
 
+function App() {
+  const [page, setPage] = useState(
+    () => new URLSearchParams(window.location.search).get('view') || 'library',
+  );
+  const [books, setBooks] = useState(readBooks);
+  const [selectedBook, setSelectedBook] = useState(null);
+  useEffect(() => {
+    const onPopState = () =>
+      setPage(new URLSearchParams(window.location.search).get('view') || 'library');
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+  const navigate = (nextPage) => {
+    window.history.pushState({}, '', `/react.html?view=${nextPage}`);
+    setPage(nextPage);
+    setSelectedBook(null);
+  };
+  const saveBooks = (nextBooks) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextBooks));
+    setBooks(nextBooks);
+  };
   return (
     <div className="react-shell">
       <header className="react-header">
         <div>
-          <p className="eyebrow">REACT GEÇİŞİ · ÖNİZLEME</p>
+          <p className="eyebrow">KİŞİSEL KOLEKSİYON</p>
           <h1>Kitap Kütüphanem</h1>
-          <p className="intro">Yeni arayüz, mevcut verilerinle birlikte çalışıyor.</p>
+          <p className="intro">
+            Kitaplarını düzenle, okuma durumunu takip et ve koleksiyonunu keşfet.
+          </p>
         </div>
-        <span className="status-badge">React altyapısı hazır</span>
+        <span className="status-badge">React aktif</span>
       </header>
-
-      <nav className="react-nav" aria-label="React önizleme gezinme">
+      <nav className="react-nav" aria-label="React uygulama gezinme">
         {navigation.map((item) => (
           <button
             className={page === item.id ? 'active' : ''}
             key={item.id}
             type="button"
-            onClick={() => setPage(item.id)}
+            onClick={() => navigate(item.id)}
           >
             {item.label}
           </button>
         ))}
       </nav>
-
       <main>
-        <section className="react-hero">
-          <div>
-            <p className="eyebrow">{navigation.find((item) => item.id === page)?.label}</p>
-            <h2>
-              {page === 'library'
-                ? 'Koleksiyonuna tek bakışta hakim ol.'
-                : 'Bu bölüm React bileşenine dönüşmeye hazır.'}
-            </h2>
-            <p>
-              Bu ilk adım, mevcut uygulamayı bozmadan bileşen tabanlı yapıya geçiş için oluşturuldu.
-            </p>
-          </div>
-          <div className="react-stats" aria-label="Kitap özeti">
-            <div>
-              <strong>{books.length}</strong>
-              <span>toplam kitap</span>
-            </div>
-            <div>
-              <strong>{readCount}</strong>
-              <span>okundu</span>
-            </div>
-            <div>
-              <strong>{readingCount}</strong>
-              <span>okunuyor</span>
-            </div>
-          </div>
-        </section>
-
-        {page === 'library' ? (
-          <section className="book-preview-section">
-            <div className="section-heading">
-              <h2>Mevcut kitapların</h2>
-              <span>{books.length} kayıt</span>
-            </div>
-            {books.length ? (
-              <div className="book-grid">
-                {books.slice(0, 12).map((book) => (
-                  <article className="book-tile" key={book.id}>
-                    <strong>{book.title || 'Başlıksız'}</strong>
-                    <span>{book.author || 'Yazar bilinmiyor'}</span>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="empty-state">Henüz yerel kitap kaydı bulunmuyor.</p>
-            )}
-          </section>
-        ) : (
-          <section className="migration-note">
-            <strong>{navigation.find((item) => item.id === page)?.label} bileşeni</strong>
-            <p>
-              Sonraki adımda bu ekran, mevcut vanilla işlevleri korunarak React bileşenlerine
-              taşınacak.
-            </p>
-          </section>
+        {page === 'library' && (
+          <LibraryPage books={books} onSelect={setSelectedBook} onNavigate={navigate} />
         )}
+        {page === 'add' && (
+          <AddPage
+            onSave={(book) => {
+              saveBooks([book, ...books]);
+              navigate('library');
+            }}
+          />
+        )}
+        {page === 'stats' && <StatsPage books={books} />}
       </main>
+      {selectedBook && <BookDetail book={selectedBook} onClose={() => setSelectedBook(null)} />}
+    </div>
+  );
+}
+
+function LibraryPage({ books, onSelect, onNavigate }) {
+  const [query, setQuery] = useState('');
+  const visibleBooks = useMemo(
+    () =>
+      books.filter((book) =>
+        `${book.title} ${book.author}`.toLowerCase().includes(query.toLowerCase()),
+      ),
+    [books, query],
+  );
+  return (
+    <section className="react-page">
+      <div className="react-page-heading">
+        <div>
+          <p className="eyebrow">KOLEKSİYON</p>
+          <h2>Kitaplığım</h2>
+        </div>
+        <button type="button" onClick={() => onNavigate('add')}>
+          + Kitap ekle
+        </button>
+      </div>
+      <label className="react-search">
+        <span className="sr-only">Kitaplarda ara</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Başlık veya yazar ara"
+        />
+      </label>
+      {visibleBooks.length ? (
+        <div className="book-grid">
+          {visibleBooks.map((book) => (
+            <button
+              className="book-tile"
+              type="button"
+              key={book.id}
+              onClick={() => onSelect(book)}
+            >
+              {coverFor(book) ? (
+                <img src={coverFor(book)} alt="" loading="lazy" />
+              ) : (
+                <span className="book-tile-placeholder">Kitap</span>
+              )}
+              <strong>{book.title || 'Başlıksız'}</strong>
+              <span>{book.author || 'Yazar bilinmiyor'}</span>
+              <small>
+                {book.status === 'read' || book.read
+                  ? 'Okundu'
+                  : book.status === 'reading'
+                    ? 'Okunuyor'
+                    : 'Okunacak'}
+              </small>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="react-empty">
+          <strong>{books.length ? 'Arama sonucu bulunamadı' : 'Henüz kitap eklenmedi'}</strong>
+          <span>
+            {books.length
+              ? 'Farklı bir başlık veya yazar deneyin.'
+              : 'İlk kitabını ekleyerek koleksiyonunu oluşturmaya başla.'}
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AddPage({ onSave }) {
+  const [form, setForm] = useState({ title: '', author: '', isbn: '' });
+  const submit = (event) => {
+    event.preventDefault();
+    if (!form.title.trim()) return;
+    onSave({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      title: form.title.trim(),
+      author: form.author.trim(),
+      isbn: form.isbn.trim(),
+      status: 'unread',
+      read: false,
+      progress: 0,
+      rating: 0,
+      tags: [],
+      metadata: {},
+      createdAt: Date.now(),
+    });
+  };
+  return (
+    <section className="react-page narrow-page">
+      <p className="eyebrow">YENİ KAYIT</p>
+      <h2>Kitap ekle</h2>
+      <form className="react-form" onSubmit={submit}>
+        <label>
+          Başlık
+          <input
+            required
+            value={form.title}
+            onChange={(event) => setForm({ ...form, title: event.target.value })}
+          />
+        </label>
+        <label>
+          Yazar
+          <input
+            value={form.author}
+            onChange={(event) => setForm({ ...form, author: event.target.value })}
+          />
+        </label>
+        <label>
+          ISBN
+          <input
+            inputMode="numeric"
+            value={form.isbn}
+            onChange={(event) => setForm({ ...form, isbn: event.target.value })}
+          />
+        </label>
+        <button type="submit">Kitabı kaydet</button>
+      </form>
+    </section>
+  );
+}
+
+function StatsPage({ books }) {
+  const read = books.filter((book) => book.read || book.status === 'read').length;
+  const reading = books.filter((book) => book.status === 'reading').length;
+  return (
+    <section className="react-page">
+      <p className="eyebrow">GENEL BAKIŞ</p>
+      <h2>İstatistikler</h2>
+      <div className="react-stat-grid">
+        <div>
+          <strong>{books.length}</strong>
+          <span>Toplam kitap</span>
+        </div>
+        <div>
+          <strong>{read}</strong>
+          <span>Okundu</span>
+        </div>
+        <div>
+          <strong>{reading}</strong>
+          <span>Okunuyor</span>
+        </div>
+        <div>
+          <strong>
+            {books.length
+              ? Math.round(
+                  books.reduce((sum, book) => sum + (Number(book.progress) || 0), 0) / books.length,
+                )
+              : 0}
+            %
+          </strong>
+          <span>Ortalama ilerleme</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BookDetail({ book, onClose }) {
+  return (
+    <div className="react-dialog-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="react-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Kitap ayrıntısı"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button className="dialog-close" type="button" onClick={onClose} aria-label="Kapat">
+          ×
+        </button>
+        {coverFor(book) && (
+          <img className="detail-cover" src={coverFor(book)} alt={`${book.title} kapak`} />
+        )}
+        <p className="eyebrow">KİTAP AYRINTISI</p>
+        <h2>{book.title}</h2>
+        <p className="detail-author">{book.author || 'Yazar bilinmiyor'}</p>
+        <dl>
+          <dt>Durum</dt>
+          <dd>
+            {book.status === 'read' || book.read
+              ? 'Okundu'
+              : book.status === 'reading'
+                ? 'Okunuyor'
+                : 'Okunacak'}
+          </dd>
+          {book.isbn && (
+            <>
+              <dt>ISBN</dt>
+              <dd>{book.isbn}</dd>
+            </>
+          )}
+          {book.progress !== undefined && (
+            <>
+              <dt>İlerleme</dt>
+              <dd>{book.progress}%</dd>
+            </>
+          )}
+        </dl>
+      </section>
     </div>
   );
 }
