@@ -1,4 +1,4 @@
-import { THEME_KEY, ANNUAL_GOAL_KEY } from '../core/config.js';
+import { THEME_KEY, ANNUAL_GOAL_KEY, MONTHLY_GOAL_KEY } from '../core/config.js';
 import { loadBooks, saveBooks, syncBooksToServer, normalizeBook } from '../core/storage.js';
 import { showToast } from './toast.js';
 import { renderBadges } from '../features/badges.js';
@@ -96,6 +96,25 @@ export function getStarRatingValue(containerId) {
   return container ? (Number(container.dataset.rating) || 0) : 0;
 }
 
+function getReadingStreak(books) {
+  const dates = new Set(books
+    .filter((book) => book.status === 'read' || book.read)
+    .map((book) => {
+      const date = new Date(book.finishDate || book.createdAt);
+      return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+    })
+    .filter(Boolean));
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!dates.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (dates.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 // ----------------------------------------------------
 // 3. MAIN RENDER FUNCTION
 // ----------------------------------------------------
@@ -146,6 +165,34 @@ export function render() {
   if (goalFill) goalFill.style.width = `${goalPercent}%`;
   const goalText = document.getElementById('goal-status-text');
   if (goalText) goalText.textContent = `Bu yıl ${readThisYear} / ${currentGoal} kitap okundu (%${goalPercent})`;
+
+  const monthlyGoalInput = document.getElementById('monthly-goal-input');
+  const savedMonthlyGoal = Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 2;
+  if (monthlyGoalInput && !monthlyGoalInput.dataset.initialized) {
+    monthlyGoalInput.value = savedMonthlyGoal;
+    monthlyGoalInput.dataset.initialized = 'true';
+    monthlyGoalInput.addEventListener('change', (event) => {
+      const value = Math.max(1, Number(event.target.value) || 2);
+      localStorage.setItem(MONTHLY_GOAL_KEY, String(value));
+      render();
+    });
+  }
+
+  const monthlyGoal = Number(monthlyGoalInput ? monthlyGoalInput.value : savedMonthlyGoal) || 2;
+  const now = new Date();
+  const readThisMonth = books.filter((book) => {
+    if (book.status !== 'read' && !book.read) return false;
+    const date = new Date(book.finishDate || book.createdAt);
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }).length;
+  const monthlyPercent = Math.min(100, Math.round((readThisMonth / monthlyGoal) * 100));
+  const monthlyFill = document.getElementById('monthly-goal-fill');
+  if (monthlyFill) monthlyFill.style.width = `${monthlyPercent}%`;
+  const monthlyStatus = document.getElementById('monthly-goal-status');
+  if (monthlyStatus) monthlyStatus.textContent = `Bu ay ${readThisMonth} / ${monthlyGoal} kitap okundu (%${monthlyPercent})`;
+
+  const streakEl = document.getElementById('reading-streak');
+  if (streakEl) streakEl.textContent = `${getReadingStreak(books)} gün`;
 
   // Top Author & Top Genre calculation
   const authorCounts = {};

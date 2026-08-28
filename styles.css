@@ -1035,6 +1035,32 @@ button.danger:hover {
   background: #000;
 }
 
+.stats-reading-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+  gap: 14px;
+}
+
+.reading-streak-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.reading-streak-card strong {
+  margin: 4px 0;
+  color: var(--primary);
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+}
+
+@media (max-width: 640px) {
+  .stats-reading-plan {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quick-scan-queue {
   display: flex;
   flex-direction: column;
