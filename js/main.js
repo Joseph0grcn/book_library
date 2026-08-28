@@ -540,6 +540,10 @@ function setup() {
 
       if (scanPrintedIsbn.checked) return;
 
+      if (!window.Quagga && window.loadLibraryScript) {
+        await window.loadLibraryScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js');
+      }
+
       if (!window.Quagga) {
         showToast('Barkod tarayıcı yüklenmedi. ISBN alanını yazabilirsiniz.', 'error');
         setScannerVisible(false);
@@ -578,6 +582,12 @@ function setup() {
     if (!scannerVideo.videoWidth || !scannerVideo.videoHeight) {
       showToast('Kamera görüntüsü hazır değil. Birkaç saniye bekleyin.', 'error');
       return;
+    }
+
+    if (!window.Tesseract && window.loadLibraryScript) {
+      try {
+        await window.loadLibraryScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+      } catch {}
     }
 
     if (!window.Tesseract) {

@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import '../supabase-config.js';
 
-const externalScripts = [
-  'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js',
-  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-];
+const supabaseScript = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -51,7 +47,8 @@ export default function LegacyApp() {
         const response = await fetch('/legacy.html');
         if (!response.ok) throw new Error('Eski uygulama şablonu yüklenemedi.');
         injectLegacyMarkup(await response.text());
-        for (const script of externalScripts) await loadScript(script);
+        await loadScript(supabaseScript);
+        window.loadLibraryScript = loadScript;
         if (!cancelled) {
           await import('../js/main.js');
           if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
