@@ -20,7 +20,7 @@ test('local mode can navigate through the main sections', async ({ page }) => {
     [/alıntılarım/i, '/quotes', '#quotes-section'],
   ].entries()) {
     const pageName = ['library', 'add', 'stats', 'quotes'][index];
-    await page.locator(`[data-page="${pageName}"]`).first().click();
+    await page.locator(`[data-page="${pageName}"]:visible`).click();
     await expect(page).toHaveURL(new RegExp(`${path}$`));
     await expect(page.locator(sections[index])).toBeVisible();
   }
