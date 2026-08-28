@@ -1069,7 +1069,7 @@ async function initializeApp() {
     if (page === 'add') document.getElementById('mode-isbn')?.click();
     if (page === 'friends') window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
     if (page === 'feed') window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
-    const pagePath = page === 'library' ? '/' : `/${page}`;
+    const pagePath = page === 'library' ? '/library' : `/${page}`;
     if (window.location.pathname !== pagePath) window.history.replaceState(null, '', pagePath);
   };
 
@@ -1082,14 +1082,25 @@ async function initializeApp() {
         supabaseClient?.auth.signOut();
         return;
       }
-      const route = targetPage === 'library' ? '/' : `/${targetPage}`;
-      window.location.assign(route);
+      const route = targetPage === 'library' ? '/library' : `/${targetPage}`;
+      window.history.pushState(null, '', route);
+      setPage(targetPage);
     });
   });
 
-  const pathPage = window.location.pathname.replace(/^\/+/, '').split('/')[0];
-  const initialPage = pathPage || window.location.hash.slice(1);
-  setPage(['feed', 'add', 'stats', 'quotes', 'profile', 'friends'].includes(initialPage) ? initialPage : 'feed');
+  const validPages = ['feed', 'library', 'add', 'stats', 'quotes', 'profile', 'friends'];
+  const pageFromLocation = () => {
+    const pathPage = window.location.pathname.replace(/^\/+/, '').split('/')[0];
+    return pathPage || window.location.hash.slice(1) || 'feed';
+  };
+
+  window.addEventListener('popstate', () => {
+    const page = pageFromLocation();
+    setPage(validPages.includes(page) ? page : 'feed');
+  });
+
+  const initialPage = pageFromLocation();
+  setPage(validPages.includes(initialPage) ? initialPage : 'feed');
 
   const toggleMenu = (menu, toggle, event) => {
     event.stopPropagation();
