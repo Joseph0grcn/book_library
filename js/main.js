@@ -1069,6 +1069,7 @@ async function initializeApp() {
   const feedSection = document.getElementById('feed-section');
   const friendProfileSection = document.getElementById('friend-profile-section');
   const mobileMockAd = document.getElementById('mobile-mock-ad');
+  const recommendationsSection = document.getElementById('recommendations-section');
   const list = document.getElementById('list');
   const detail = document.getElementById('book-detail');
 
@@ -1092,6 +1093,7 @@ async function initializeApp() {
     if (friendsSection) friendsSection.classList.toggle('page-hidden', page !== 'friends');
     if (feedSection) feedSection.classList.toggle('page-hidden', page !== 'feed');
     if (friendProfileSection) friendProfileSection.classList.toggle('page-hidden', page !== 'friend-profile');
+    if (recommendationsSection) recommendationsSection.classList.toggle('page-hidden', page !== 'library');
     if (mobileMockAd) mobileMockAd.classList.toggle('hidden', page !== 'feed');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {

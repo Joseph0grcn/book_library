@@ -2333,6 +2333,42 @@ button.danger:hover {
   text-align: center;
 }
 
+.recommendations-section {
+  margin-top: 18px;
+}
+
+.recommendations-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.recommendation-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  background: var(--soft);
+  color: var(--text);
+}
+
+.recommendation-item strong,
+.recommendation-item span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .feed-section {
   display: flex;
   flex-direction: column;

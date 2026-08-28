@@ -115,6 +115,14 @@ function getReadingStreak(books) {
   return streak;
 }
 
+function escapeHtmlUi(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // ----------------------------------------------------
 // 3. MAIN RENDER FUNCTION
 // ----------------------------------------------------
@@ -241,6 +249,7 @@ export function render() {
   // Render Badges & Quotes
   renderBadges(books);
   renderQuotes();
+  renderRecommendations(books);
 
   // Filters & Search
   const query = (document.getElementById('search')?.value || '').trim().toLowerCase();
@@ -391,6 +400,40 @@ export function render() {
   });
 }
 
+function renderRecommendations(books) {
+  const section = document.getElementById('recommendations-section');
+  const list = document.getElementById('recommendations-list');
+  if (!section || !list) return;
+  const readBooks = books.filter((book) => book.status === 'read' || book.read);
+  const authors = new Set(readBooks.map((book) => book.author.trim().toLowerCase()).filter(Boolean));
+  const tags = new Set(readBooks.flatMap((book) => (book.tags || []).map((tag) => String(tag).trim().toLowerCase())).filter(Boolean));
+  const recommendations = books
+    .filter((book) => book.status !== 'read' && !book.read)
+    .map((book) => {
+      const authorMatch = authors.has(book.author.trim().toLowerCase()) ? 3 : 0;
+      const tagMatches = (book.tags || []).reduce((score, tag) => score + (tags.has(String(tag).trim().toLowerCase()) ? 1 : 0), 0);
+      return { book, score: authorMatch + tagMatches + (Number(book.rating) || 0) * 0.1 };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((item) => item.book);
+  if (!recommendations.length) {
+    section.classList.add('page-hidden');
+    return;
+  }
+  section.classList.remove('page-hidden');
+  list.innerHTML = '';
+  recommendations.forEach((book) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'recommendation-item';
+    button.innerHTML = `<strong>${escapeHtmlUi(book.title)}</strong><span>${escapeHtmlUi(book.author || 'Yazar bilinmiyor')}</span>`;
+    button.addEventListener('click', () => showBookDetail(book));
+    list.appendChild(button);
+  });
+}
+
 // ----------------------------------------------------
 // 4. BOOK DETAIL VIEW
 // ----------------------------------------------------
@@ -411,6 +454,7 @@ export function showBookDetail(book) {
   controls.classList.add('hidden');
   list.classList.add('hidden');
   detail.classList.remove('hidden', 'page-hidden');
+  document.getElementById('recommendations-section')?.classList.add('hidden');
   content.innerHTML = '';
 
   const layout = document.createElement('div');
@@ -537,6 +581,7 @@ export function hideBookDetail() {
   document.querySelector('.controls').classList.remove('hidden');
   document.getElementById('list').classList.remove('hidden');
   document.getElementById('book-detail').classList.add('hidden', 'page-hidden');
+  document.getElementById('recommendations-section')?.classList.remove('hidden');
 }
 
 export function getBookCoverUrl(book) {
