@@ -124,6 +124,16 @@ Service worker uygulama kabuğunu önbelleğe alır. Kitap verileri ve Supabase 
 - `netlify.toml`
 - `netlify/functions/books.js`
 
+## Tarayici UI testleri
+
+Playwright smoke testleri masaustu Chrome ve iPhone emulasyonu ile ana navigasyonu, yerel modu ve bildirim panelini kontrol eder:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:ui
+```
+
 ## Notlar
 
 - Yerel moddaki veriler yalnızca kullanılan tarayıcıda tutulur.
