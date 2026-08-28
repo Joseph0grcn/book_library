@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kitap-kutuphanem-v5';
+const CACHE_NAME = 'kitap-kutuphanem-v6';
 const APP_SHELL = ['/', '/index.html', '/legacy.html', '/react.html'];
 
 self.addEventListener('install', (event) => {
@@ -26,7 +26,11 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+      .catch(() => caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        if (event.request.mode === 'navigate') return caches.match('/index.html');
+        throw new Error('Offline asset unavailable');
+      }))
   );
 });
 
