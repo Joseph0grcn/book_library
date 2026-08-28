@@ -2,7 +2,7 @@ import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './
 import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts } from './core/storage.js';
+import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts, toggleFeedLike, addFeedComment } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, getBookCoverUrl, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
 let appInitialized = false;
@@ -294,10 +294,14 @@ function setup() {
       const largeCover = safeUrl(post.cover_large_url || post.cover_url);
       const status = post.status === 'read' ? 'Okundu' : post.status === 'reading' ? 'Okunuyor' : 'Okunacak';
       const date = post.created_at ? new Date(post.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const comments = (post.comments || []).map((comment) => `<li><strong>${escapeHtml(String(comment.user_id || '').slice(0, 8))}</strong><span>${escapeHtml(comment.body)}</span></li>`).join('');
       return `<article class="feed-post card-widget">
         <div class="feed-post-author"><div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</div><div><strong>${escapeHtml(name)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)} · ` : ''}${escapeHtml(date)}</span></div></div>
         <div class="feed-book">${cover ? `<button type="button" class="feed-book-cover feed-cover-button" data-feed-cover="${escapeHtml(largeCover)}" data-feed-title="${escapeHtml(post.title)}" title="Kapağı büyüt"><img src="${escapeHtml(cover)}" alt="${escapeHtml(post.title)} kapak görseli" loading="lazy" /></button>` : '<div class="feed-book-cover"><span>Kitap</span></div>'}<div class="feed-book-info"><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.author || 'Yazar bilinmiyor')}${post.year ? ` · ${escapeHtml(post.year)}` : ''}</p><span class="shelf-badge">${status}</span>${post.rating ? `<span class="feed-rating">★ ${post.rating}/5</span>` : ''}</div></div>
         ${post.caption ? `<p class="feed-caption">${escapeHtml(post.caption)}</p>` : ''}
+        <div class="feed-actions"><button type="button" class="feed-like-button${post.likedByMe ? ' is-liked' : ''}" data-feed-like="${escapeHtml(post.id)}" data-liked="${post.likedByMe}">${post.likedByMe ? 'Beğenildi' : 'Beğen'} · ${post.likeCount || 0}</button><span>${post.comments?.length || 0} yorum</span></div>
+        ${comments ? `<ul class="feed-comments">${comments}</ul>` : ''}
+        <form class="feed-comment-form" data-feed-comment-form="${escapeHtml(post.id)}"><input name="comment" type="text" maxlength="500" placeholder="Yorum yaz..." aria-label="Yorum yaz" required /><button type="submit">Gönder</button></form>
       </article>`;
     }).join('');
     feedList.querySelectorAll('.feed-post-author').forEach((author, index) => {
@@ -866,6 +870,28 @@ function setup() {
     if (!coverButton) return;
     openCoverModal(coverButton.dataset.feedCover, coverButton.dataset.feedTitle || 'Kitap kapağı');
   });
+  feedList.addEventListener('click', (event) => {
+    const likeButton = event.target.closest('[data-feed-like]');
+    if (!likeButton) return;
+    likeButton.disabled = true;
+    toggleFeedLike(likeButton.dataset.feedLike, likeButton.dataset.liked === 'true')
+      .then(refreshFeed)
+      .catch((error) => showToast('Beğeni kaydedilemedi: ' + error.message, 'error'))
+      .finally(() => { likeButton.disabled = false; });
+  });
+  feedList.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-feed-comment-form]');
+    if (!form) return;
+    event.preventDefault();
+    const input = form.elements.comment;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    addFeedComment(form.dataset.feedCommentForm, input.value)
+      .then(() => { input.value = ''; return refreshFeed(); })
+      .catch((error) => showToast('Yorum kaydedilemedi: ' + error.message, 'error'))
+      .finally(() => { submitButton.disabled = false; });
+  });
+
   shareInFeed.addEventListener('change', () => {
     shareCaption.classList.toggle('hidden', !shareInFeed.checked);
   });

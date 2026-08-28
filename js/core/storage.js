@@ -319,10 +319,49 @@ export async function fetchFeedPosts() {
     .in('user_id', userIds);
   if (profileError) throw profileError;
   const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, normalizeProfile(profile)]));
+  const interactions = await fetchFeedInteractions(rows.map((post) => post.id));
   return rows.map((post) => ({
     ...post,
-    profile: profileMap.get(post.user_id) || normalizeProfile()
+    profile: profileMap.get(post.user_id) || normalizeProfile(),
+    ...(interactions.get(post.id) || { likeCount: 0, likedByMe: false, comments: [] })
   }));
+}
+
+async function fetchFeedInteractions(postIds) {
+  const result = new Map();
+  if (!postIds.length) return result;
+  const [{ data: likes, error: likesError }, { data: comments, error: commentsError }] = await Promise.all([
+    supabaseClient.from('feed_post_likes').select('post_id, user_id').in('post_id', postIds),
+    supabaseClient.from('feed_comments').select('id, post_id, user_id, body, created_at').in('post_id', postIds).order('created_at', { ascending: true })
+  ]);
+  if (likesError) throw likesError;
+  if (commentsError) throw commentsError;
+  postIds.forEach((postId) => {
+    const postLikes = (likes || []).filter((like) => like.post_id === postId);
+    result.set(postId, {
+      likeCount: postLikes.length,
+      likedByMe: postLikes.some((like) => like.user_id === activeUser.id),
+      comments: (comments || []).filter((comment) => comment.post_id === postId)
+    });
+  });
+  return result;
+}
+
+export async function toggleFeedLike(postId, liked) {
+  if (!supabaseClient || !activeUser) throw new Error('Beğenmek için giriş yapmalısınız.');
+  const query = supabaseClient.from('feed_post_likes');
+  const result = liked
+    ? await query.delete().eq('post_id', postId).eq('user_id', activeUser.id)
+    : await query.insert({ post_id: postId, user_id: activeUser.id });
+  if (result.error) throw result.error;
+}
+
+export async function addFeedComment(postId, body) {
+  if (!supabaseClient || !activeUser) throw new Error('Yorum yapmak için giriş yapmalısınız.');
+  const text = String(body || '').trim().slice(0, 500);
+  if (!text) throw new Error('Yorum boş bırakılamaz.');
+  const { error } = await supabaseClient.from('feed_comments').insert({ id: uid(), post_id: postId, user_id: activeUser.id, body: text });
+  if (error) throw error;
 }
 
 export function getSyncState() {

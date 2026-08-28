@@ -2451,6 +2451,67 @@ button.danger:hover {
   line-height: 1.5;
 }
 
+.feed-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.feed-like-button {
+  padding: 6px 10px;
+  background: var(--soft);
+  color: var(--text);
+}
+
+.feed-like-button.is-liked {
+  background: color-mix(in srgb, var(--primary) 18%, var(--soft));
+  color: var(--primary);
+}
+
+.feed-comments {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.feed-comments li {
+  display: flex;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: var(--soft);
+}
+
+.feed-comments span {
+  overflow-wrap: anywhere;
+}
+
+.feed-comment-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feed-comment-form input {
+  min-width: 0;
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.feed-comment-form button {
+  padding: 8px 11px;
+}
+
 .feed-empty {
   display: flex;
   flex-direction: column;
