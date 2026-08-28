@@ -1664,6 +1664,14 @@ button.danger:hover {
   color: var(--primary);
 }
 
+.quote-tag {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--soft);
+  color: var(--primary-dark);
+  font-size: 0.74rem;
+}
+
 .quote-actions {
   display: flex;
   gap: 8px;

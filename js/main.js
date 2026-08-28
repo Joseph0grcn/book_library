@@ -960,8 +960,9 @@ function setup() {
       const author = document.getElementById('quote-author').value.trim();
       const text = document.getElementById('quote-text').value.trim();
       const pageNumber = document.getElementById('quote-page').value.trim();
+      const tags = document.getElementById('quote-tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
 
-      const added = addQuote({ bookTitle, author, text, pageNumber });
+      const added = addQuote({ bookTitle, author, text, pageNumber, tags });
       if (added) {
         quoteForm.reset();
         if (quoteModal) quoteModal.classList.add('hidden');

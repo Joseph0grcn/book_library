@@ -37,7 +37,7 @@ export function saveQuotes(quotes) {
   localStorage.setItem(getUserStorageKey(QUOTES_KEY), JSON.stringify(quotes));
 }
 
-export function addQuote({ bookTitle, author, text, pageNumber }) {
+export function addQuote({ bookTitle, author, text, pageNumber, tags = [] }) {
   if (!text || !text.trim()) {
     showToast('Alıntı metni zorunludur.', 'error');
     return false;
@@ -50,6 +50,7 @@ export function addQuote({ bookTitle, author, text, pageNumber }) {
     author: author ? author.trim() : '',
     text: text.trim(),
     pageNumber: pageNumber ? pageNumber.trim() : '',
+    tags: Array.isArray(tags) ? tags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 12) : [],
     createdAt: Date.now()
   };
 
@@ -78,7 +79,7 @@ export function renderQuotes() {
 
   const filtered = quotes.filter((q) => {
     if (!query) return true;
-    const haystack = `${q.text} ${q.bookTitle} ${q.author}`.toLowerCase();
+    const haystack = `${q.text} ${q.bookTitle} ${q.author} ${(q.tags || []).join(' ')}`.toLowerCase();
     return haystack.includes(query);
   });
 
@@ -94,6 +95,7 @@ export function renderQuotes() {
         <strong class="quote-book-title">${escapeHtml(quote.bookTitle)}</strong>
         ${quote.author ? `<span class="quote-author">— ${escapeHtml(quote.author)}</span>` : ''}
         ${quote.pageNumber ? `<span class="quote-page">Sayfa ${escapeHtml(quote.pageNumber)}</span>` : ''}
+        ${(quote.tags || []).map((tag) => `<span class="quote-tag">#${escapeHtml(tag)}</span>`).join('')}
       </div>
       <div class="quote-actions">
         <button type="button" class="small secondary copy-quote-btn" data-text="${escapeHtml(quote.text)} — ${escapeHtml(quote.bookTitle)}">Kopyala</button>
