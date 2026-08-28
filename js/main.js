@@ -3,6 +3,7 @@ import { showToast } from './ui/toast.js';
 import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
 import { csvToBooks } from './features/import.js';
+import { renderNotifications, markNotificationsRead } from './features/notifications.js';
 import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts, toggleFeedLike, addFeedComment } from './core/storage.js';
 import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, getBookCoverUrl, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
 
@@ -158,6 +159,18 @@ function setup() {
   let feedPosts = [];
   let scannerBusy = false;
 
+  const notificationsToggle = document.getElementById('notifications-toggle');
+  const notificationsPanel = document.getElementById('notifications-panel');
+  notificationsToggle?.addEventListener('click', () => {
+    const isOpen = notificationsPanel?.classList.toggle('hidden') === false;
+    notificationsToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+  document.getElementById('notifications-read-all')?.addEventListener('click', () => {
+    markNotificationsRead();
+    renderNotifications({ incomingFriends: friendshipData.incoming, books: loadBooks() });
+  });
+  renderNotifications({ books: loadBooks() });
+
   // Star Rating for Main Book Form
   setupStarRating('form-rating-widget', 0);
 
@@ -266,6 +279,7 @@ function setup() {
     outgoingCount.textContent = `${friendshipData.outgoing.length} bekliyor`;
     renderFriendItems(friendsList, friendshipData.friends, (item) => `<button type="button" class="small danger" data-friend-action="remove" data-friend-id="${escapeHtml(item.id)}">Çıkar</button>`, 'Henüz arkadaş eklemediniz.');
     renderFriendItems(incomingFriends, friendshipData.incoming, (item) => `<button type="button" class="small" data-friend-action="accept" data-friend-id="${escapeHtml(item.id)}">Kabul et</button><button type="button" class="small secondary" data-friend-action="decline" data-friend-id="${escapeHtml(item.id)}">Reddet</button>`, 'Bekleyen arkadaşlık isteği yok.');
+    renderNotifications({ incomingFriends: friendshipData.incoming, books: loadBooks() });
   }
 
   async function refreshFriendships() {
