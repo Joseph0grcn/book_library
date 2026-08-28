@@ -1,11 +1,50 @@
 import { supabaseClient, activeUser, setActiveUser, getUserStorageKey } from './core/config.js';
 import { showToast } from './ui/toast.js';
-import { fetchBookMetadata, findDuplicateBook, normalizeIsbn, getIsbnVariants } from './features/isbn.js';
+import {
+  fetchBookMetadata,
+  findDuplicateBook,
+  normalizeIsbn,
+  getIsbnVariants,
+} from './features/isbn.js';
 import { addQuote, renderQuotes } from './features/quotes.js';
 import { csvToBooks } from './features/import.js';
 import { renderNotifications, markNotificationsRead } from './features/notifications.js';
-import { loadBooks, saveBooks, createBook, fetchAllBooksFromServer, syncBooksToServer, flushPendingSync, setupRealtimeSubscription, getSyncState, loadProfile, saveProfile, fetchProfileFromServer, syncProfileToServer, searchProfiles, fetchFriendships, fetchFriendProfile, sendFriendRequest, updateFriendship, removeFriendship, createFeedPost, fetchFeedPosts, toggleFeedLike, addFeedComment } from './core/storage.js';
-import { initTheme, setupStarRating, getStarRatingValue, render, hideBookDetail, getBookCoverUrl, openCoverModal, closeCoverModal, closeEditModal, saveEditedBook } from './ui/ui.js';
+import {
+  loadBooks,
+  saveBooks,
+  createBook,
+  fetchAllBooksFromServer,
+  syncBooksToServer,
+  flushPendingSync,
+  setupRealtimeSubscription,
+  getSyncState,
+  loadProfile,
+  saveProfile,
+  fetchProfileFromServer,
+  syncProfileToServer,
+  searchProfiles,
+  fetchFriendships,
+  fetchFriendProfile,
+  sendFriendRequest,
+  updateFriendship,
+  removeFriendship,
+  createFeedPost,
+  fetchFeedPosts,
+  toggleFeedLike,
+  addFeedComment,
+} from './core/storage.js';
+import {
+  initTheme,
+  setupStarRating,
+  getStarRatingValue,
+  render,
+  hideBookDetail,
+  getBookCoverUrl,
+  openCoverModal,
+  closeCoverModal,
+  closeEditModal,
+  saveEditedBook,
+} from './ui/ui.js';
 
 let appInitialized = false;
 let deferredInstallPrompt = null;
@@ -13,7 +52,7 @@ let deferredInstallPrompt = null;
 function setupPwaUi() {
   const installButton = document.getElementById('pwa-install');
   const connectionStatus = document.getElementById('connection-status');
-  
+
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
@@ -33,8 +72,14 @@ function setupPwaUi() {
   const updateConnectionStatus = () => {
     if (connectionStatus) {
       const syncState = getSyncState();
-      const syncLabel = { syncing: 'Senkronize ediliyor', pending: 'Bekleyen senkron', error: 'Senkronizasyon hatası', local: 'Yerel mod', synced: 'Senkronize' }[syncState.status];
-      connectionStatus.textContent = navigator.onLine ? (syncLabel || 'Çevrimiçi') : 'Çevrimdışı';
+      const syncLabel = {
+        syncing: 'Senkronize ediliyor',
+        pending: 'Bekleyen senkron',
+        error: 'Senkronizasyon hatası',
+        local: 'Yerel mod',
+        synced: 'Senkronize',
+      }[syncState.status];
+      connectionStatus.textContent = navigator.onLine ? syncLabel || 'Çevrimiçi' : 'Çevrimdışı';
       connectionStatus.classList.toggle('offline', !navigator.onLine);
       connectionStatus.classList.toggle('sync-error', syncState.status === 'error');
     }
@@ -57,7 +102,8 @@ function setupPwaUi() {
 
 function showLookupError(isbn, message) {
   const modal = document.getElementById('lookup-error-modal');
-  document.getElementById('lookup-error-message').textContent = message || 'Kitap bilgisi alınamadı.';
+  document.getElementById('lookup-error-message').textContent =
+    message || 'Kitap bilgisi alınamadı.';
   document.getElementById('lookup-error-isbn').textContent = isbn || 'Okunamadı';
   modal.classList.remove('hidden');
 }
@@ -75,11 +121,18 @@ export function showAuthErrorModal(errorMessage) {
 
   const lowerMsg = msg.toLowerCase();
   if (lowerMsg.includes('invalid login credentials')) {
-    suggestion += 'Girdiğiniz e-posta veya şifre eşleşmiyor.<br/>• Henüz bu e-posta adresiyle kayıt olmadıysanız <strong>"Hesap oluştur"</strong> butonuna basabilirsiniz.<br/>• Şifrenizi doğru girdiğinizden emin olun.';
+    suggestion +=
+      'Girdiğiniz e-posta veya şifre eşleşmiyor.<br/>• Henüz bu e-posta adresiyle kayıt olmadıysanız <strong>"Hesap oluştur"</strong> butonuna basabilirsiniz.<br/>• Şifrenizi doğru girdiğinizden emin olun.';
   } else if (lowerMsg.includes('email not confirmed')) {
-    suggestion += 'E-posta adresiniz henüz doğrulanmamış.<br/>• Gelen kutunuzdaki onay bağlantısına tıklayın.<br/>• Veya Supabase panelinde (Auth ➔ Email) <strong>Confirm Email</strong> seçeneğini kapatın.';
-  } else if (lowerMsg.includes('api key') || lowerMsg.includes('jwt') || lowerMsg.includes('secret api key')) {
-    suggestion += 'Supabase API Anahtarı geçersiz.<br/>• <strong>supabase-config.js</strong> dosyasındaki <code>window.SUPABASE_ANON_KEY</code> değerini kontrol edin.';
+    suggestion +=
+      'E-posta adresiniz henüz doğrulanmamış.<br/>• Gelen kutunuzdaki onay bağlantısına tıklayın.<br/>• Veya Supabase panelinde (Auth ➔ Email) <strong>Confirm Email</strong> seçeneğini kapatın.';
+  } else if (
+    lowerMsg.includes('api key') ||
+    lowerMsg.includes('jwt') ||
+    lowerMsg.includes('secret api key')
+  ) {
+    suggestion +=
+      'Supabase API Anahtarı geçersiz.<br/>• <strong>supabase-config.js</strong> dosyasındaki <code>window.SUPABASE_ANON_KEY</code> değerini kontrol edin.';
   } else {
     suggestion += 'İnternet bağlantınızı ve giriş bilgilerinizi kontrol edip tekrar deneyiniz.';
   }
@@ -89,10 +142,11 @@ export function showAuthErrorModal(errorMessage) {
 }
 
 function getAuthRedirectUrl() {
-  const configuredUrl = String(window.APP_URL || '').trim().replace(/\/+$/, '');
+  const configuredUrl = String(window.APP_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
   return configuredUrl || window.location.origin;
 }
-
 
 function setup() {
   const form = document.getElementById('book-form');
@@ -164,6 +218,20 @@ function setup() {
   notificationsToggle?.addEventListener('click', () => {
     const isOpen = notificationsPanel?.classList.toggle('hidden') === false;
     notificationsToggle.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen) notificationsPanel?.focus();
+  });
+  document.addEventListener('click', (event) => {
+    if (!notificationsPanel || notificationsPanel.classList.contains('hidden')) return;
+    if (notificationsPanel.contains(event.target) || notificationsToggle?.contains(event.target))
+      return;
+    notificationsPanel.classList.add('hidden');
+    notificationsToggle?.setAttribute('aria-expanded', 'false');
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || notificationsPanel?.classList.contains('hidden')) return;
+    notificationsPanel.classList.add('hidden');
+    notificationsToggle?.setAttribute('aria-expanded', 'false');
+    notificationsToggle?.focus();
   });
   document.getElementById('notifications-read-all')?.addEventListener('click', () => {
     markNotificationsRead();
@@ -198,10 +266,14 @@ function setup() {
     profileAvatarInput.value = profile.avatarUrl;
     profileCoverInput.value = profile.coverUrl;
     profileDisplayName.textContent = displayName;
-    profileUsername.textContent = profile.username ? `@${profile.username}` : 'Profil bilgilerinizi düzenleyin';
+    profileUsername.textContent = profile.username
+      ? `@${profile.username}`
+      : 'Profil bilgilerinizi düzenleyin';
     profileBio.textContent = profile.bio || 'Kendiniz hakkında birkaç satır ekleyin.';
     profileLocation.textContent = profile.location ? `⌖ ${profile.location}` : '';
-    profileWebsite.textContent = profile.website ? `↗ ${profile.website.replace(/^https?:\/\//, '')}` : '';
+    profileWebsite.textContent = profile.website
+      ? `↗ ${profile.website.replace(/^https?:\/\//, '')}`
+      : '';
     profileWebsite.title = profile.website || '';
     profileAvatarFallback.textContent = displayName.slice(0, 1).toUpperCase();
     const avatarUrl = safeUrl(profile.avatarUrl);
@@ -222,16 +294,18 @@ function setup() {
       container.innerHTML = `<p class="muted friend-empty">${emptyText}</p>`;
       return;
     }
-    container.innerHTML = items.map((item) => {
-      const profile = item.profile;
-      const label = profileLabel(profile);
-      const avatar = safeUrl(profile.avatarUrl);
-      return `<div class="friend-item">
+    container.innerHTML = items
+      .map((item) => {
+        const profile = item.profile;
+        const label = profileLabel(profile);
+        const avatar = safeUrl(profile.avatarUrl);
+        return `<div class="friend-item">
         <button type="button" class="friend-profile-link" data-friend-profile="${escapeHtml(profile.userId)}" aria-label="${escapeHtml(label)} profilini görüntüle"><span class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(label.slice(0, 1).toUpperCase())}</span>
         <span class="friend-item-info"><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : 'Profil bilgisi yok'}</span></span></button>
         <div class="friend-item-actions">${actionMarkup(item)}</div>
       </div>`;
-    }).join('');
+      })
+      .join('');
   }
 
   function renderFriendProfile(data) {
@@ -249,22 +323,41 @@ function setup() {
     coverImage.classList.toggle('hidden', !coverUrl);
     if (coverUrl) coverImage.src = coverUrl;
     document.getElementById('friend-profile-display-name').textContent = label;
-    document.getElementById('friend-profile-username').textContent = profile.username ? `@${profile.username}` : '';
-    document.getElementById('friend-profile-bio').textContent = profile.bio || 'Bu kullanıcı henüz hakkında bilgi eklememiş.';
-    document.getElementById('friend-profile-location').textContent = profile.location ? `⌖ ${profile.location}` : '';
-    document.getElementById('friend-profile-website').textContent = profile.website ? `↗ ${profile.website.replace(/^https?:\/\//, '')}` : '';
+    document.getElementById('friend-profile-username').textContent = profile.username
+      ? `@${profile.username}`
+      : '';
+    document.getElementById('friend-profile-bio').textContent =
+      profile.bio || 'Bu kullanıcı henüz hakkında bilgi eklememiş.';
+    document.getElementById('friend-profile-location').textContent = profile.location
+      ? `⌖ ${profile.location}`
+      : '';
+    document.getElementById('friend-profile-website').textContent = profile.website
+      ? `↗ ${profile.website.replace(/^https?:\/\//, '')}`
+      : '';
     friendProfileBooksCount.textContent = `${data.books.length} kitap`;
     friendProfileBooksTitle.textContent = `${label} adlı kişinin kütüphanesi`;
-    friendProfileBooksList.innerHTML = data.books.length ? data.books.map((book) => {
-      const cover = safeUrl(getBookCoverUrl(book));
-      const status = book.status === 'read' ? 'Okundu' : book.status === 'reading' ? 'Okunuyor' : 'Okunacak';
-      return `<article class="friend-book-item">${cover ? `<button type="button" class="friend-book-cover" data-friend-book-cover="${escapeHtml(cover)}" data-friend-book-title="${escapeHtml(book.title)}"><img src="${escapeHtml(cover)}" alt="${escapeHtml(book.title)} kapak görseli" loading="lazy" /></button>` : '<div class="friend-book-cover friend-book-cover-empty">Kitap</div>'}<div><h3>${escapeHtml(book.title)}</h3><p>${escapeHtml(book.author || 'Yazar bilinmiyor')}</p><span class="shelf-badge">${status}</span></div></article>`;
-    }).join('') : '<p class="muted friend-empty">Bu kütüphanede henüz kitap yok.</p>';
+    friendProfileBooksList.innerHTML = data.books.length
+      ? data.books
+          .map((book) => {
+            const cover = safeUrl(getBookCoverUrl(book));
+            const status =
+              book.status === 'read'
+                ? 'Okundu'
+                : book.status === 'reading'
+                  ? 'Okunuyor'
+                  : 'Okunacak';
+            return `<article class="friend-book-item">${cover ? `<button type="button" class="friend-book-cover" data-friend-book-cover="${escapeHtml(cover)}" data-friend-book-title="${escapeHtml(book.title)}"><img src="${escapeHtml(cover)}" alt="${escapeHtml(book.title)} kapak görseli" loading="lazy" /></button>` : '<div class="friend-book-cover friend-book-cover-empty">Kitap</div>'}<div><h3>${escapeHtml(book.title)}</h3><p>${escapeHtml(book.author || 'Yazar bilinmiyor')}</p><span class="shelf-badge">${status}</span></div></article>`;
+          })
+          .join('')
+      : '<p class="muted friend-empty">Bu kütüphanede henüz kitap yok.</p>';
   }
 
   async function openFriendProfile(userId) {
-    friendProfileBooksList.innerHTML = '<p class="muted friend-empty">Profil ve kitaplık yükleniyor...</p>';
-    window.dispatchEvent(new CustomEvent('book-library:navigate', { detail: { page: 'friend-profile' } }));
+    friendProfileBooksList.innerHTML =
+      '<p class="muted friend-empty">Profil ve kitaplık yükleniyor...</p>';
+    window.dispatchEvent(
+      new CustomEvent('book-library:navigate', { detail: { page: 'friend-profile' } }),
+    );
     try {
       renderFriendProfile(await fetchFriendProfile(userId));
     } catch (error) {
@@ -277,8 +370,20 @@ function setup() {
     friendsCount.textContent = String(friendshipData.friends.length);
     incomingCount.textContent = String(friendshipData.incoming.length);
     outgoingCount.textContent = `${friendshipData.outgoing.length} bekliyor`;
-    renderFriendItems(friendsList, friendshipData.friends, (item) => `<button type="button" class="small danger" data-friend-action="remove" data-friend-id="${escapeHtml(item.id)}">Çıkar</button>`, 'Henüz arkadaş eklemediniz.');
-    renderFriendItems(incomingFriends, friendshipData.incoming, (item) => `<button type="button" class="small" data-friend-action="accept" data-friend-id="${escapeHtml(item.id)}">Kabul et</button><button type="button" class="small secondary" data-friend-action="decline" data-friend-id="${escapeHtml(item.id)}">Reddet</button>`, 'Bekleyen arkadaşlık isteği yok.');
+    renderFriendItems(
+      friendsList,
+      friendshipData.friends,
+      (item) =>
+        `<button type="button" class="small danger" data-friend-action="remove" data-friend-id="${escapeHtml(item.id)}">Çıkar</button>`,
+      'Henüz arkadaş eklemediniz.',
+    );
+    renderFriendItems(
+      incomingFriends,
+      friendshipData.incoming,
+      (item) =>
+        `<button type="button" class="small" data-friend-action="accept" data-friend-id="${escapeHtml(item.id)}">Kabul et</button><button type="button" class="small secondary" data-friend-action="decline" data-friend-id="${escapeHtml(item.id)}">Reddet</button>`,
+      'Bekleyen arkadaşlık isteği yok.',
+    );
     renderNotifications({ incomingFriends: friendshipData.incoming, books: loadBooks() });
   }
 
@@ -298,19 +403,33 @@ function setup() {
 
   function renderFeed() {
     if (!feedPosts.length) {
-      feedList.innerHTML = '<div class="feed-empty card-widget"><strong>Akış henüz boş</strong><span>Arkadaş ekleyip kitaplarını akışta paylaşmalarını bekleyin.</span></div>';
+      feedList.innerHTML =
+        '<div class="feed-empty card-widget"><strong>Akış henüz boş</strong><span>Arkadaş ekleyip kitaplarını akışta paylaşmalarını bekleyin.</span></div>';
       return;
     }
-    feedList.innerHTML = feedPosts.map((post) => {
-      const profile = post.profile || {};
-      const name = profileLabel(profile);
-      const avatar = safeUrl(profile.avatarUrl);
-      const cover = safeUrl(post.cover_url);
-      const largeCover = safeUrl(post.cover_large_url || post.cover_url);
-      const status = post.status === 'read' ? 'Okundu' : post.status === 'reading' ? 'Okunuyor' : 'Okunacak';
-      const date = post.created_at ? new Date(post.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-      const comments = (post.comments || []).map((comment) => `<li><strong>${escapeHtml(String(comment.user_id || '').slice(0, 8))}</strong><span>${escapeHtml(comment.body)}</span></li>`).join('');
-      return `<article class="feed-post card-widget">
+    feedList.innerHTML = feedPosts
+      .map((post) => {
+        const profile = post.profile || {};
+        const name = profileLabel(profile);
+        const avatar = safeUrl(profile.avatarUrl);
+        const cover = safeUrl(post.cover_url);
+        const largeCover = safeUrl(post.cover_large_url || post.cover_url);
+        const status =
+          post.status === 'read' ? 'Okundu' : post.status === 'reading' ? 'Okunuyor' : 'Okunacak';
+        const date = post.created_at
+          ? new Date(post.created_at).toLocaleDateString('tr-TR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          : '';
+        const comments = (post.comments || [])
+          .map(
+            (comment) =>
+              `<li><strong>${escapeHtml(String(comment.user_id || '').slice(0, 8))}</strong><span>${escapeHtml(comment.body)}</span></li>`,
+          )
+          .join('');
+        return `<article class="feed-post card-widget">
         <div class="feed-post-author"><div class="friend-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</div><div><strong>${escapeHtml(name)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)} · ` : ''}${escapeHtml(date)}</span></div></div>
         <div class="feed-book">${cover ? `<button type="button" class="feed-book-cover feed-cover-button" data-feed-cover="${escapeHtml(largeCover)}" data-feed-title="${escapeHtml(post.title)}" title="Kapağı büyüt"><img src="${escapeHtml(cover)}" alt="${escapeHtml(post.title)} kapak görseli" loading="lazy" /></button>` : '<div class="feed-book-cover"><span>Kitap</span></div>'}<div class="feed-book-info"><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.author || 'Yazar bilinmiyor')}${post.year ? ` · ${escapeHtml(post.year)}` : ''}</p><span class="shelf-badge">${status}</span>${post.rating ? `<span class="feed-rating">★ ${post.rating}/5</span>` : ''}</div></div>
         ${post.caption ? `<p class="feed-caption">${escapeHtml(post.caption)}</p>` : ''}
@@ -318,7 +437,8 @@ function setup() {
         ${comments ? `<ul class="feed-comments">${comments}</ul>` : ''}
         <form class="feed-comment-form" data-feed-comment-form="${escapeHtml(post.id)}"><input name="comment" type="text" maxlength="500" placeholder="Yorum yaz..." aria-label="Yorum yaz" required /><button type="submit">Gönder</button></form>
       </article>`;
-    }).join('');
+      })
+      .join('');
     feedList.querySelectorAll('.feed-post-author').forEach((author, index) => {
       const post = feedPosts[index];
       author.dataset.feedProfile = post?.profile?.userId || post?.user_id || '';
@@ -347,7 +467,12 @@ function setup() {
   function renderQuickScanQueue() {
     quickScanCount.textContent = String(quickScanQueue.length);
     quickScanList.innerHTML = quickScanQueue.length
-      ? quickScanQueue.map((isbn) => `<button type="button" class="quick-scan-item" data-quick-isbn="${escapeHtml(isbn)}" title="ISBN'i listeden çıkar">${escapeHtml(isbn)}</button>`).join('')
+      ? quickScanQueue
+          .map(
+            (isbn) =>
+              `<button type="button" class="quick-scan-item" data-quick-isbn="${escapeHtml(isbn)}" title="ISBN'i listeden çıkar">${escapeHtml(isbn)}</button>`,
+          )
+          .join('')
       : '<span class="muted">Henüz ISBN okutulmadı.</span>';
   }
 
@@ -403,7 +528,9 @@ function setup() {
   function stopScanner() {
     scannerLoopToken += 1;
     if (window.Quagga) {
-      try { window.Quagga.stop(); } catch {}
+      try {
+        window.Quagga.stop();
+      } catch {}
     }
     if (scannerVideo && scannerVideo.srcObject) {
       scannerVideo.srcObject.getTracks().forEach((track) => track.stop());
@@ -450,7 +577,9 @@ function setup() {
     }
   });
 
-  document.getElementById('close-lookup-error').addEventListener('click', () => lookupErrorModal.classList.add('hidden'));
+  document
+    .getElementById('close-lookup-error')
+    .addEventListener('click', () => lookupErrorModal.classList.add('hidden'));
   lookupErrorModal.addEventListener('click', (event) => {
     if (event.target === lookupErrorModal) lookupErrorModal.classList.add('hidden');
   });
@@ -522,15 +651,21 @@ function setup() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
       });
 
       scannerVideo.srcObject = stream;
       await scannerVideo.play();
 
       if (!scanPrintedIsbn.checked && 'BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+        const detector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'],
+        });
         const token = ++scannerLoopToken;
         const scanFrame = async () => {
           if (token !== scannerLoopToken || scannerModal.classList.contains('hidden')) return;
@@ -560,7 +695,9 @@ function setup() {
       if (scanPrintedIsbn.checked) return;
 
       if (!window.Quagga && window.loadLibraryScript) {
-        await window.loadLibraryScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js');
+        await window.loadLibraryScript(
+          'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js',
+        );
       }
 
       if (!window.Quagga) {
@@ -569,28 +706,36 @@ function setup() {
         return;
       }
 
-      window.Quagga.init({
-        inputStream: { name: 'Live', type: 'LiveStream', target: scannerVideo, constraints: { facingMode: 'environment' } },
-        decoder: { readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'code_128_reader'] },
-        locate: true
-      }, function (err) {
-        if (err) {
-          showToast('Barkod tarayıcısı başlatılamadı.', 'error');
-          stopScanner();
-          return;
-        }
-        window.Quagga.onDetected((result) => {
-          const code = result.codeResult && result.codeResult.code;
-          if (!code) return;
-          const cleaned = String(code).replace(/[^0-9Xx]/g, '');
-          if (!cleaned) return;
-          handleScannedIsbn(cleaned, 'Barkod').catch((error) => {
-            showToast(error.message, 'error');
-            showLookupError(cleaned, error.message);
+      window.Quagga.init(
+        {
+          inputStream: {
+            name: 'Live',
+            type: 'LiveStream',
+            target: scannerVideo,
+            constraints: { facingMode: 'environment' },
+          },
+          decoder: { readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'code_128_reader'] },
+          locate: true,
+        },
+        function (err) {
+          if (err) {
+            showToast('Barkod tarayıcısı başlatılamadı.', 'error');
+            stopScanner();
+            return;
+          }
+          window.Quagga.onDetected((result) => {
+            const code = result.codeResult && result.codeResult.code;
+            if (!code) return;
+            const cleaned = String(code).replace(/[^0-9Xx]/g, '');
+            if (!cleaned) return;
+            handleScannedIsbn(cleaned, 'Barkod').catch((error) => {
+              showToast(error.message, 'error');
+              showLookupError(cleaned, error.message);
+            });
           });
-        });
-        window.Quagga.start();
-      });
+          window.Quagga.start();
+        },
+      );
     } catch {
       showToast('Kamera erişimi yok.', 'error');
       stopScanner();
@@ -605,7 +750,9 @@ function setup() {
 
     if (!window.Tesseract && window.loadLibraryScript) {
       try {
-        await window.loadLibraryScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+        await window.loadLibraryScript(
+          'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+        );
       } catch {}
     }
 
@@ -704,7 +851,11 @@ function setup() {
     let title = document.getElementById('title').value.trim();
     let author = document.getElementById('author').value.trim();
     let year = document.getElementById('year').value.trim();
-    let tags = document.getElementById('tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
+    let tags = document
+      .getElementById('tags')
+      .value.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
     let isbn = '';
     let metadata = {};
 
@@ -758,8 +909,8 @@ function setup() {
       metadata: {
         ...metadata,
         loanedTo: document.getElementById('loaned-to').value.trim(),
-        loanDueDate: document.getElementById('loan-due-date').value
-      }
+        loanDueDate: document.getElementById('loan-due-date').value,
+      },
     });
 
     books.unshift(newBook);
@@ -804,7 +955,7 @@ function setup() {
       website: profileWebsiteInput.value,
       avatarUrl: profileAvatarInput.value,
       coverUrl: profileCoverInput.value,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
     renderProfile(profile);
     try {
@@ -824,12 +975,17 @@ function setup() {
     friendSearchResults.innerHTML = '<p class="muted friend-empty">Aranıyor...</p>';
     try {
       const profiles = await searchProfiles(friendSearchInput.value);
-      friendSearchResults.innerHTML = profiles.length ? profiles.map((profile) => {
-        const label = profileLabel(profile);
-        return `<div class="friend-search-result"><div><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : ''}</span></div><button type="button" class="small" data-add-username="${escapeHtml(profile.username)}">İstek gönder</button></div>`;
-      }).join('') : '<p class="muted friend-empty">Eşleşen profil bulunamadı.</p>';
+      friendSearchResults.innerHTML = profiles.length
+        ? profiles
+            .map((profile) => {
+              const label = profileLabel(profile);
+              return `<div class="friend-search-result"><div><strong>${escapeHtml(label)}</strong><span>${profile.username ? `@${escapeHtml(profile.username)}` : ''}</span></div><button type="button" class="small" data-add-username="${escapeHtml(profile.username)}">İstek gönder</button></div>`;
+            })
+            .join('')
+        : '<p class="muted friend-empty">Eşleşen profil bulunamadı.</p>';
     } catch (error) {
-      friendSearchResults.innerHTML = '<p class="muted friend-empty">Profil araması kullanılamıyor.</p>';
+      friendSearchResults.innerHTML =
+        '<p class="muted friend-empty">Profil araması kullanılamıyor.</p>';
       showToast('Profil araması başarısız: ' + error.message, 'error');
     }
   });
@@ -859,9 +1015,18 @@ function setup() {
     button.disabled = true;
     try {
       if (button.dataset.friendAction === 'remove') await removeFriendship(button.dataset.friendId);
-      else await updateFriendship(button.dataset.friendId, button.dataset.friendAction === 'accept' ? 'accepted' : 'declined');
+      else
+        await updateFriendship(
+          button.dataset.friendId,
+          button.dataset.friendAction === 'accept' ? 'accepted' : 'declined',
+        );
       await refreshFriendships();
-      showToast(button.dataset.friendAction === 'remove' ? 'Arkadaş çıkarıldı.' : 'Arkadaşlık isteği güncellendi.', 'success');
+      showToast(
+        button.dataset.friendAction === 'remove'
+          ? 'Arkadaş çıkarıldı.'
+          : 'Arkadaşlık isteği güncellendi.',
+        'success',
+      );
     } catch (error) {
       button.disabled = false;
       showToast('İşlem başarısız: ' + error.message, 'error');
@@ -870,9 +1035,19 @@ function setup() {
   friendsList.addEventListener('click', handleFriendAction);
   friendProfileSection.addEventListener('click', (event) => {
     const cover = event.target.closest('[data-friend-book-cover]');
-    if (cover) openCoverModal(cover.dataset.friendBookCover, cover.dataset.friendBookTitle || 'Kitap kapağı');
+    if (cover)
+      openCoverModal(
+        cover.dataset.friendBookCover,
+        cover.dataset.friendBookTitle || 'Kitap kapağı',
+      );
   });
-  document.getElementById('back-to-friends').addEventListener('click', () => window.dispatchEvent(new CustomEvent('book-library:navigate', { detail: { page: 'friends' } })));
+  document
+    .getElementById('back-to-friends')
+    .addEventListener('click', () =>
+      window.dispatchEvent(
+        new CustomEvent('book-library:navigate', { detail: { page: 'friends' } }),
+      ),
+    );
   incomingFriends.addEventListener('click', handleFriendAction);
   refreshFeedButton.addEventListener('click', refreshFeed);
   feedList.addEventListener('click', (event) => {
@@ -892,7 +1067,9 @@ function setup() {
     toggleFeedLike(likeButton.dataset.feedLike, likeButton.dataset.liked === 'true')
       .then(refreshFeed)
       .catch((error) => showToast('Beğeni kaydedilemedi: ' + error.message, 'error'))
-      .finally(() => { likeButton.disabled = false; });
+      .finally(() => {
+        likeButton.disabled = false;
+      });
   });
   feedList.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-feed-comment-form]');
@@ -902,9 +1079,14 @@ function setup() {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     addFeedComment(form.dataset.feedCommentForm, input.value)
-      .then(() => { input.value = ''; return refreshFeed(); })
+      .then(() => {
+        input.value = '';
+        return refreshFeed();
+      })
       .catch((error) => showToast('Yorum kaydedilemedi: ' + error.message, 'error'))
-      .finally(() => { submitButton.disabled = false; });
+      .finally(() => {
+        submitButton.disabled = false;
+      });
   });
 
   shareInFeed.addEventListener('change', () => {
@@ -925,7 +1107,10 @@ function setup() {
   document.getElementById('year-to-filter').addEventListener('input', render);
   document.addEventListener('keydown', (event) => {
     const target = event.target;
-    const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+    const isTyping =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement;
     if (event.key === '/' && !isTyping) {
       event.preventDefault();
       document.getElementById('search')?.focus();
@@ -937,7 +1122,9 @@ function setup() {
       document.getElementById('actions-menu-toggle')?.setAttribute('aria-expanded', 'false');
     }
   });
-  progress.addEventListener('input', () => { progressValue.value = `${progress.value}%`; });
+  progress.addEventListener('input', () => {
+    progressValue.value = `${progress.value}%`;
+  });
   readingStatus.addEventListener('change', () => {
     if (readingStatus.value === 'read') progress.value = 100;
     progressValue.value = `${progress.value}%`;
@@ -955,8 +1142,14 @@ function setup() {
       const bookSelect = document.getElementById('quote-book-select');
       if (bookSelect) {
         const books = loadBooks();
-        bookSelect.innerHTML = '<option value="">Kitap seçin (veya elle yazın)</option>' +
-          books.map((b) => `<option value="${escapeHtml(b.title)}">${escapeHtml(b.title)} (${escapeHtml(b.author)})</option>`).join('');
+        bookSelect.innerHTML =
+          '<option value="">Kitap seçin (veya elle yazın)</option>' +
+          books
+            .map(
+              (b) =>
+                `<option value="${escapeHtml(b.title)}">${escapeHtml(b.title)} (${escapeHtml(b.author)})</option>`,
+            )
+            .join('');
       }
       quoteModal.classList.remove('hidden');
     });
@@ -975,7 +1168,11 @@ function setup() {
       const author = document.getElementById('quote-author').value.trim();
       const text = document.getElementById('quote-text').value.trim();
       const pageNumber = document.getElementById('quote-page').value.trim();
-      const tags = document.getElementById('quote-tags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
+      const tags = document
+        .getElementById('quote-tags')
+        .value.split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
 
       const added = addQuote({ bookTitle, author, text, pageNumber, tags });
       if (added) {
@@ -1002,7 +1199,10 @@ function setup() {
 
   document.getElementById('backup').addEventListener('click', () => {
     const books = loadBooks();
-    const blob = new Blob([JSON.stringify({ version: 1, createdAt: new Date().toISOString(), books }, null, 2)], { type: 'application/json' });
+    const blob = new Blob(
+      [JSON.stringify({ version: 1, createdAt: new Date().toISOString(), books }, null, 2)],
+      { type: 'application/json' },
+    );
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -1035,7 +1235,7 @@ function setup() {
       const text = await file.text();
       const isCsv = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv';
       const parsed = isCsv ? csvToBooks(text) : JSON.parse(text);
-      const incoming = isCsv ? parsed : (Array.isArray(parsed) ? parsed : parsed.books);
+      const incoming = isCsv ? parsed : Array.isArray(parsed) ? parsed : parsed.books;
       if (!Array.isArray(incoming)) throw new Error('Geçersiz JSON formatı.');
 
       const existing = loadBooks();
@@ -1099,7 +1299,10 @@ async function initializeApp() {
     controls.classList.remove('hidden');
     list.classList.remove('hidden');
     detail.classList.add('hidden', 'page-hidden');
-    controls.classList.toggle('page-hidden', ['stats', 'quotes', 'profile', 'friends', 'feed', 'friend-profile'].includes(page));
+    controls.classList.toggle(
+      'page-hidden',
+      ['stats', 'quotes', 'profile', 'friends', 'feed', 'friend-profile'].includes(page),
+    );
     modeSwitch.classList.toggle('page-hidden', page !== 'add');
     bookForm.classList.toggle('page-hidden', page !== 'add');
     filters.classList.toggle('page-hidden', page !== 'library');
@@ -1108,8 +1311,10 @@ async function initializeApp() {
     if (profileSection) profileSection.classList.toggle('page-hidden', page !== 'profile');
     if (friendsSection) friendsSection.classList.toggle('page-hidden', page !== 'friends');
     if (feedSection) feedSection.classList.toggle('page-hidden', page !== 'feed');
-    if (friendProfileSection) friendProfileSection.classList.toggle('page-hidden', page !== 'friend-profile');
-    if (recommendationsSection) recommendationsSection.classList.toggle('page-hidden', page !== 'library');
+    if (friendProfileSection)
+      friendProfileSection.classList.toggle('page-hidden', page !== 'friend-profile');
+    if (recommendationsSection)
+      recommendationsSection.classList.toggle('page-hidden', page !== 'library');
     if (mobileMockAd) mobileMockAd.classList.toggle('hidden', page !== 'feed');
     list.classList.toggle('page-hidden', page !== 'library');
     document.querySelectorAll('[data-page]').forEach((item) => {
@@ -1117,13 +1322,16 @@ async function initializeApp() {
     });
 
     if (page === 'add') document.getElementById('mode-isbn')?.click();
-    if (page === 'friends') window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
+    if (page === 'friends')
+      window.dispatchEvent(new CustomEvent('book-library:friendships-refresh'));
     if (page === 'feed') window.dispatchEvent(new CustomEvent('book-library:feed-refresh'));
     const pagePath = page === 'library' ? '/library' : `/${page}`;
     if (window.location.pathname !== pagePath) window.history.replaceState(null, '', pagePath);
   };
 
-  window.addEventListener('book-library:navigate', (event) => setPage(event.detail?.page || 'library'));
+  window.addEventListener('book-library:navigate', (event) =>
+    setPage(event.detail?.page || 'library'),
+  );
 
   document.querySelectorAll('[data-page]').forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -1162,8 +1370,12 @@ async function initializeApp() {
     toggle.setAttribute('aria-expanded', String(isOpen));
   };
 
-  filterMenuToggle.addEventListener('click', (event) => toggleMenu(filterMenu, filterMenuToggle, event));
-  actionsMenuToggle.addEventListener('click', (event) => toggleMenu(actionsMenu, actionsMenuToggle, event));
+  filterMenuToggle.addEventListener('click', (event) =>
+    toggleMenu(filterMenu, filterMenuToggle, event),
+  );
+  actionsMenuToggle.addEventListener('click', (event) =>
+    toggleMenu(actionsMenu, actionsMenuToggle, event),
+  );
   filterMenu.addEventListener('click', (event) => event.stopPropagation());
   actionsMenu.addEventListener('click', (event) => event.stopPropagation());
   document.addEventListener('click', () => {
@@ -1197,7 +1409,9 @@ async function initializeApp() {
         try {
           const profile = await fetchProfileFromServer();
           saveProfile(profile);
-          window.dispatchEvent(new CustomEvent('book-library:profile-updated', { detail: profile }));
+          window.dispatchEvent(
+            new CustomEvent('book-library:profile-updated', { detail: profile }),
+          );
         } catch (profileError) {
           console.warn('Profile sync unavailable:', profileError);
         }
@@ -1215,7 +1429,6 @@ async function initializeApp() {
     }
   };
 
-
   // 1. Attach Form Event Listeners IMMEDIATELY so clicks are never blocked
   authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -1228,7 +1441,7 @@ async function initializeApp() {
     try {
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: document.getElementById('auth-email').value.trim(),
-        password: document.getElementById('auth-password').value
+        password: document.getElementById('auth-password').value,
       });
       if (error) {
         authStatus.textContent = 'Giriş Hatası: ' + error.message;
@@ -1261,7 +1474,7 @@ async function initializeApp() {
       const { data, error } = await supabaseClient.auth.signUp({
         email: document.getElementById('auth-email').value.trim(),
         password: document.getElementById('auth-password').value,
-        options: { emailRedirectTo: getAuthRedirectUrl() }
+        options: { emailRedirectTo: getAuthRedirectUrl() },
       });
       if (error) {
         authStatus.textContent = 'Kayıt Hatası: ' + error.message;
@@ -1269,7 +1482,9 @@ async function initializeApp() {
         showToast('Kayıt Başarısız: ' + error.message, 'error');
         showAuthErrorModal(error.message);
       } else {
-        const msg = data.session ? 'Hesabınız oluşturuldu ve giriş yapıldı.' : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
+        const msg = data.session
+          ? 'Hesabınız oluşturuldu ve giriş yapıldı.'
+          : 'Hesabınız oluşturuldu. Lütfen e-postanızı doğrulayın, ardından giriş yapın.';
         authStatus.textContent = msg;
         authStatus.style.color = 'var(--primary)';
         showToast(msg, 'info');
@@ -1290,8 +1505,28 @@ async function initializeApp() {
   });
 
   const mockAdLinks = [
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', image: 'https://cdn.shopier.app/pictures_large/dreamlayerstr_1ab277ea81cd7b768a65ec58d9c5fddd.png', label: 'DREAM LAYERS', art: 'DL', detail: 'SEÇKİ', copy: 'Dream Layers ürünlerini Shopier mağazasında keşfet.' },
-    { name: 'Dream Layers', handle: '@dreamlayerstr', url: 'https://www.shopier.com/dreamlayerstr', image: 'https://cdn.shopier.app/pictures_large/dreamlayerstr_f9c1289a9a9cb4e7f15cca8b59ed77a1.png', label: 'DREAM LAYERS', art: 'DL', detail: 'YENİ', copy: 'Yeni Dream Layers seçkisini Shopier mağazasında incele.' }
+    {
+      name: 'Dream Layers',
+      handle: '@dreamlayerstr',
+      url: 'https://www.shopier.com/dreamlayerstr',
+      image:
+        'https://cdn.shopier.app/pictures_large/dreamlayerstr_1ab277ea81cd7b768a65ec58d9c5fddd.png',
+      label: 'DREAM LAYERS',
+      art: 'DL',
+      detail: 'SEÇKİ',
+      copy: 'Dream Layers ürünlerini Shopier mağazasında keşfet.',
+    },
+    {
+      name: 'Dream Layers',
+      handle: '@dreamlayerstr',
+      url: 'https://www.shopier.com/dreamlayerstr',
+      image:
+        'https://cdn.shopier.app/pictures_large/dreamlayerstr_f9c1289a9a9cb4e7f15cca8b59ed77a1.png',
+      label: 'DREAM LAYERS',
+      art: 'DL',
+      detail: 'YENİ',
+      copy: 'Yeni Dream Layers seçkisini Shopier mağazasında incele.',
+    },
   ];
   document.querySelectorAll('.mock-ad-rail').forEach((ad, index) => {
     const content = mockAdLinks[index];
@@ -1308,7 +1543,9 @@ async function initializeApp() {
     ad.querySelector('.mock-ad-meta span:last-child').textContent = content.handle;
     const action = ad.querySelector('.mock-ad-action');
     action.textContent = 'Mağazayı ziyaret et';
-    action.addEventListener('click', () => window.open(content.url, '_blank', 'noopener,noreferrer'));
+    action.addEventListener('click', () =>
+      window.open(content.url, '_blank', 'noopener,noreferrer'),
+    );
   });
   if (mobileMockAd) {
     const mobileContent = mobileMockAd.querySelector('div');
@@ -1327,7 +1564,7 @@ async function initializeApp() {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: getAuthRedirectUrl() }
+        options: { redirectTo: getAuthRedirectUrl() },
       });
       if (error) throw error;
     } catch (error) {
@@ -1361,11 +1598,12 @@ async function initializeApp() {
     showToast('Çıkış yapıldı.', 'info');
   });
 
-
   // 2. Check Existing Supabase Session Safely
   if (supabaseClient) {
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
       if (session) await showApp(session);
       else finishBoot();
 
@@ -1382,11 +1620,11 @@ async function initializeApp() {
       console.warn('Supabase session check error:', sessionErr);
     }
   } else {
-    authStatus.textContent = 'Supabase istemcisi bağlanamadı. Dilerseniz Yerel Modda kullanabilirsiniz.';
+    authStatus.textContent =
+      'Supabase istemcisi bağlanamadı. Dilerseniz Yerel Modda kullanabilirsiniz.';
     finishBoot();
   }
 }
-
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -1403,4 +1641,3 @@ function escapeHtml(str) {
 initTheme();
 setupPwaUi();
 initializeApp();
-

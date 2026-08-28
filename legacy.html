@@ -40,7 +40,7 @@
         <p class="intro">Koleksiyonunu tek yerde keşfet, takip et ve büyüt.</p>
       </div>
       <div class="header-actions">
-        <button type="button" id="notifications-toggle" class="secondary small" aria-expanded="false">Bildirimler <span id="notifications-count" class="notification-count hidden">0</span></button>
+        <button type="button" id="notifications-toggle" class="secondary small" aria-expanded="false" aria-controls="notifications-panel">Bildirimler <span id="notifications-count" class="notification-count hidden" aria-label="okunmamış bildirim sayısı">0</span></button>
         <button type="button" id="theme-toggle" class="secondary small">🌙 Koyu Mod</button>
         <span id="connection-status" class="connection-status">Çevrimiçi</span>
         <button type="button" id="pwa-install" class="secondary small hidden">Uygulamayı yükle</button>
@@ -53,7 +53,7 @@
       </div>
     </header>
 
-    <div id="notifications-panel" class="notifications-panel hidden" role="dialog" aria-label="Bildirimler">
+    <div id="notifications-panel" class="notifications-panel hidden" role="dialog" aria-modal="false" aria-label="Bildirimler" tabindex="-1">
       <div class="notifications-header"><strong>Bildirimler</strong><button type="button" id="notifications-read-all" class="small secondary">Tümünü okundu işaretle</button></div>
       <ul id="notifications-list" class="notifications-list"></ul>
     </div>
