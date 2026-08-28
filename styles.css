@@ -166,6 +166,70 @@ header {
   gap: 8px;
 }
 
+.notification-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.notifications-panel {
+  position: absolute;
+  z-index: 20;
+  top: 92px;
+  right: 24px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notifications-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px;
+  border-radius: 7px;
+  background: var(--soft);
+  font-size: 0.82rem;
+}
+
+.notification-type {
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.notification-item.is-read { opacity: 0.62; }
+.notification-empty { color: var(--muted); font-size: 0.84rem; }
+
+@media (max-width: 640px) {
+  .notifications-panel { top: 72px; right: 16px; }
+}
+
 .connection-status {
   display: inline-flex;
   align-items: center;
