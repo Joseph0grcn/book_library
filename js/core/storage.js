@@ -1,4 +1,4 @@
-import { STORAGE_KEY, PROFILE_KEY, PENDING_SYNC_KEY, SYNC_STATE_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
+import { STORAGE_KEY, PROFILE_KEY, PENDING_SYNC_KEY, SYNC_STATE_KEY, BACKUP_KEY, supabaseClient, activeUser, getUserStorageKey, uid } from './config.js';
 import { showToast } from '../ui/toast.js';
 
 export function normalizeBook(rawBook = {}) {
@@ -58,7 +58,35 @@ export function loadBooks() {
 }
 
 export function saveBooks(books) {
-  localStorage.setItem(getUserStorageKey(STORAGE_KEY), JSON.stringify(books));
+  let booksToSave = books;
+  try {
+    const previous = JSON.parse(localStorage.getItem(getUserStorageKey(STORAGE_KEY)) || '[]');
+    const previousById = new Map((Array.isArray(previous) ? previous : []).map((book) => [book.id, book]));
+    booksToSave = books.map((book) => {
+      const old = previousById.get(book.id);
+      if (!old || (old.progress === book.progress && old.status === book.status)) return book;
+      const history = Array.isArray(book.metadata?.readingHistory) ? book.metadata.readingHistory : [];
+      return { ...book, metadata: { ...book.metadata, readingHistory: [{ at: new Date().toISOString(), progress: book.progress, status: book.status }, ...history].slice(0, 20) } };
+    });
+  } catch {}
+  localStorage.setItem(getUserStorageKey(STORAGE_KEY), JSON.stringify(booksToSave));
+  const backupKey = getUserStorageKey(BACKUP_KEY);
+  try {
+    const history = JSON.parse(localStorage.getItem(backupKey) || '[]');
+    const next = [{ createdAt: Date.now(), books: booksToSave }, ...(Array.isArray(history) ? history : [])].slice(0, 5);
+    localStorage.setItem(backupKey, JSON.stringify(next));
+  } catch {
+    // A full localStorage must not block normal book saving.
+  }
+}
+
+export function restoreLatestBackup() {
+  try {
+    const history = JSON.parse(localStorage.getItem(getUserStorageKey(BACKUP_KEY)) || '[]');
+    return Array.isArray(history) && history[0]?.books ? history[0].books : null;
+  } catch {
+    return null;
+  }
 }
 
 export function createBook(bookData) {

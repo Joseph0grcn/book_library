@@ -2,7 +2,7 @@ import { getUserStorageKey } from '../core/config.js';
 
 const NOTIFICATIONS_KEY = 'book_library_notifications';
 
-export function renderNotifications({ incomingFriends = [], books = [] } = {}) {
+export function renderNotifications({ incomingFriends = [], books = [], feedPosts = [] } = {}) {
   const list = document.getElementById('notifications-list');
   const badge = document.getElementById('notifications-count');
   if (!list || !badge) return;
@@ -22,6 +22,13 @@ export function renderNotifications({ incomingFriends = [], books = [] } = {}) {
         type: 'Ödünç',
         text: `${book.title} için iade tarihi ${days === 0 ? 'bugün' : `${days} gün sonra`}.`,
       });
+  });
+  feedPosts.slice(0, 10).forEach((post) => {
+    next.push({
+      id: `feed-${post.id}`,
+      type: 'Akış',
+      text: `${post.profile?.displayName || post.profile?.username || 'Bir arkadaş'} yeni bir kitap paylaştı: ${post.title}.`,
+    });
   });
   const notifications = next.map((item) => ({
     ...item,

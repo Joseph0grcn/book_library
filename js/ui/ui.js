@@ -1,4 +1,4 @@
-import { THEME_KEY, ANNUAL_GOAL_KEY, MONTHLY_GOAL_KEY } from '../core/config.js';
+import { THEME_KEY, ANNUAL_GOAL_KEY, MONTHLY_GOAL_KEY, READING_PLAN_KEY, getUserStorageKey } from '../core/config.js';
 import { loadBooks, saveBooks, syncBooksToServer, normalizeBook } from '../core/storage.js';
 import { showToast } from './toast.js';
 import { renderBadges } from '../features/badges.js';
@@ -218,6 +218,31 @@ export function render() {
     });
   });
 
+  const plannerDate = document.getElementById('planner-date');
+  const plannerPages = document.getElementById('planner-pages');
+  const plannerResult = document.getElementById('planner-result');
+  if (plannerDate && plannerPages && plannerResult && !plannerDate.dataset.initialized) {
+    try {
+      const plan = JSON.parse(localStorage.getItem(getUserStorageKey(READING_PLAN_KEY)) || '{}');
+      plannerDate.value = plan.date || '';
+      plannerPages.value = plan.pages || '';
+    } catch {}
+    const updatePlanner = () => {
+      const pages = Number(plannerPages.value);
+      const target = new Date(`${plannerDate.value}T23:59:59`);
+      const days = Math.ceil((target - new Date()) / 86400000);
+      localStorage.setItem(getUserStorageKey(READING_PLAN_KEY), JSON.stringify({ date: plannerDate.value, pages }));
+      if (!plannerDate.value || !pages) { plannerResult.textContent = 'Tarih ve sayfa sayısını girince günlük planın burada görünür.'; return; }
+      if (days < 1) { plannerResult.textContent = 'Hedef tarihi gelecekte bir gün seçmelisin.'; return; }
+      const daily = Math.ceil(pages / days);
+      plannerResult.textContent = `${days} günde tamamlamak için günde yaklaşık ${daily} sayfa oku. Haftalık hedef: ${daily * 7} sayfa.`;
+    };
+    plannerDate.addEventListener('input', updatePlanner);
+    plannerPages.addEventListener('input', updatePlanner);
+    plannerDate.dataset.initialized = 'true';
+    updatePlanner();
+  }
+
   let topAuthor = '-';
   let maxAuthorCount = 0;
   Object.entries(authorCounts).forEach(([auth, count]) => {
@@ -419,28 +444,35 @@ function renderRecommendations(books) {
   const readBooks = books.filter((book) => book.status === 'read' || book.read);
   const authors = new Set(readBooks.map((book) => book.author.trim().toLowerCase()).filter(Boolean));
   const tags = new Set(readBooks.flatMap((book) => (book.tags || []).map((tag) => String(tag).trim().toLowerCase())).filter(Boolean));
+  const categories = new Set(readBooks.flatMap((book) => {
+    const values = book.metadata?.categories || book.metadata?.subjects || [];
+    return (Array.isArray(values) ? values : [values]).map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+  }));
   const recommendations = books
     .filter((book) => book.status !== 'read' && !book.read)
     .map((book) => {
       const authorMatch = authors.has(book.author.trim().toLowerCase()) ? 3 : 0;
       const tagMatches = (book.tags || []).reduce((score, tag) => score + (tags.has(String(tag).trim().toLowerCase()) ? 1 : 0), 0);
-      return { book, score: authorMatch + tagMatches + (Number(book.rating) || 0) * 0.1 };
+      const values = book.metadata?.categories || book.metadata?.subjects || [];
+      const categoryMatches = (Array.isArray(values) ? values : [values]).reduce((score, value) => score + (categories.has(String(value).trim().toLowerCase()) ? 1 : 0), 0);
+      const reason = authorMatch ? 'Sevdiğin bir yazar' : tagMatches ? 'Benzer etiketler' : 'Benzer türler';
+      return { book, reason, score: authorMatch + tagMatches + categoryMatches + (Number(book.rating) || 0) * 0.1 };
     })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)
-    .map((item) => item.book);
+    ;
   if (!recommendations.length) {
     section.classList.add('page-hidden');
     return;
   }
   section.classList.remove('page-hidden');
   list.innerHTML = '';
-  recommendations.forEach((book) => {
+  recommendations.forEach(({ book, reason }) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'recommendation-item';
-    button.innerHTML = `<strong>${escapeHtmlUi(book.title)}</strong><span>${escapeHtmlUi(book.author || 'Yazar bilinmiyor')}</span>`;
+    button.innerHTML = `<strong>${escapeHtmlUi(book.title)}</strong><span>${escapeHtmlUi(book.author || 'Yazar bilinmiyor')} · ${escapeHtmlUi(reason)}</span>`;
     button.addEventListener('click', () => showBookDetail(book));
     list.appendChild(button);
   });
@@ -537,6 +569,49 @@ export function showBookDetail(book) {
   }
   layout.appendChild(summary);
   content.appendChild(layout);
+
+  const progressPanel = document.createElement('div');
+  progressPanel.className = 'detail-progress-panel';
+  progressPanel.innerHTML = `<strong>Okuma ilerlemesi</strong><div class="detail-progress-track"><i style="width: ${Math.min(100, Math.max(0, Number(book.progress) || 0))}%"></i></div><span>${Number(book.progress) || 0}% tamamlandı</span>`;
+  content.appendChild(progressPanel);
+
+  const galleryUrls = [
+    ...(metadata.imageLinks ? Object.values(metadata.imageLinks) : []),
+    ...(Array.isArray(metadata.cover_gallery) ? metadata.cover_gallery : []),
+  ].map((url) => String(url).replace(/^http:/, 'https:')).filter(Boolean);
+  const uniqueGallery = [...new Set([coverUrl, ...galleryUrls])].filter(Boolean).slice(0, 6);
+  if (uniqueGallery.length > 1) {
+    const gallery = document.createElement('div');
+    gallery.className = 'book-cover-gallery';
+    gallery.innerHTML = '<h3>Kapak galerisi</h3>';
+    const galleryList = document.createElement('div');
+    galleryList.className = 'cover-gallery-list';
+    uniqueGallery.forEach((url) => {
+      const imageButton = document.createElement('button');
+      imageButton.type = 'button';
+      imageButton.className = 'cover-gallery-item';
+      imageButton.innerHTML = `<img src="${escapeHtmlUi(url)}" alt="${escapeHtmlUi(book.title)} kapak görseli" loading="lazy" />`;
+      imageButton.addEventListener('click', () => openCoverModal(url, book.title));
+      galleryList.appendChild(imageButton);
+    });
+    gallery.appendChild(galleryList);
+    content.appendChild(gallery);
+  }
+
+  const history = Array.isArray(metadata.readingHistory) ? metadata.readingHistory : [];
+  if (history.length) {
+    const historyPanel = document.createElement('div');
+    historyPanel.className = 'reading-history';
+    historyPanel.innerHTML = '<h3>Okuma geçmişi</h3>';
+    const historyList = document.createElement('ul');
+    history.slice(0, 6).forEach((entry) => {
+      const item = document.createElement('li');
+      item.textContent = `${new Date(entry.at).toLocaleDateString('tr-TR')} · ${entry.progress}% · ${entry.status === 'read' ? 'Okundu' : entry.status === 'reading' ? 'Okunuyor' : 'Okunacak'}`;
+      historyList.appendChild(item);
+    });
+    historyPanel.appendChild(historyList);
+    content.appendChild(historyPanel);
+  }
 
   const metadataEntries = Object.entries(metadata).filter(([key, value]) => {
     return key !== 'description' && value !== null && value !== undefined && value !== '';

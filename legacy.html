@@ -213,6 +213,7 @@
           <button id="export" class="secondary">JSON Dışa Aktar</button>
           <button id="save-db" class="secondary">db.json Olarak Kaydet</button>
           <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" hidden />
+          <button id="restore-backup" class="secondary">Son yedeği geri yükle</button>
           <button id="import" class="secondary">JSON / CSV içe aktar</button>
           <button id="clear" class="danger">Tümünü Sil</button>
         </div>
@@ -267,6 +268,15 @@
           <strong id="reading-streak">0 gün</strong>
           <span class="widget-subtext">Ardışık okuma günü</span>
         </div>
+      </div>
+
+      <div class="card-widget reading-planner">
+        <div class="widget-header"><div><span class="widget-label">OKUMA PLANLAYICI</span><strong>Hedef tarihe kadar bitir</strong></div></div>
+        <div class="planner-fields">
+          <label class="field-label"><span>Hedef tarih</span><input id="planner-date" type="date" /></label>
+          <label class="field-label"><span>Toplam sayfa</span><input id="planner-pages" type="number" min="1" max="100000" placeholder="Örn. 320" /></label>
+        </div>
+        <p id="planner-result" class="widget-subtext">Tarih ve sayfa sayısını girince günlük planın burada görünür.</p>
       </div>
 
       <div class="stats-insights-grid">

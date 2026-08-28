@@ -32,6 +32,7 @@ import {
   fetchFeedPosts,
   toggleFeedLike,
   addFeedComment,
+  restoreLatestBackup,
 } from './core/storage.js';
 import {
   initTheme,
@@ -402,6 +403,7 @@ function setup() {
   }
 
   function renderFeed() {
+    renderNotifications({ incomingFriends: friendshipData.incoming, books: loadBooks(), feedPosts });
     if (!feedPosts.length) {
       feedList.innerHTML =
         '<div class="feed-empty card-widget"><strong>Akış henüz boş</strong><span>Arkadaş ekleyip kitaplarını akışta paylaşmalarını bekleyin.</span></div>';
@@ -1226,6 +1228,16 @@ function setup() {
 
   document.getElementById('import').addEventListener('click', () => {
     document.getElementById('import-file').click();
+  });
+
+  document.getElementById('restore-backup')?.addEventListener('click', async () => {
+    const backup = restoreLatestBackup();
+    if (!backup) { showToast('Geri yüklenecek yedek bulunamadı.', 'info'); return; }
+    if (!confirm(`${backup.length} kitaplık son yedekten geri yüklensin mi?`)) return;
+    saveBooks(backup);
+    await syncBooksToServer(backup);
+    render();
+    showToast('Son yedek geri yüklendi.', 'success');
   });
 
   document.getElementById('import-file').addEventListener('change', async (event) => {

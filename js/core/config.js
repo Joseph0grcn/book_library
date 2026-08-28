@@ -7,6 +7,8 @@ export const THEME_KEY = 'book_library_theme';
 export const ANNUAL_GOAL_KEY = 'book_library_annual_goal';
 export const MONTHLY_GOAL_KEY = 'book_library_monthly_goal';
 export const SYNC_STATE_KEY = 'book_library_sync_state';
+export const BACKUP_KEY = 'book_library_backup_history';
+export const READING_PLAN_KEY = 'book_library_reading_plan';
 
 const runtimeWindow = typeof window !== 'undefined' ? window : {};
 export const supabaseClient = (
