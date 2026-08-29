@@ -200,6 +200,22 @@ p {
   display: block;
   margin-bottom: 18px;
 }
+.react-filter {
+  display: inline-grid;
+  gap: 5px;
+  margin-bottom: 18px;
+  color: #66807a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.react-filter select,
+.react-form select {
+  padding: 10px 12px;
+  border: 1px solid #b9d6ce;
+  border-radius: 8px;
+  color: #19332f;
+  background: #f8fbfa;
+}
 .react-search input,
 .react-form input,
 .react-form textarea {
@@ -351,6 +367,19 @@ p {
 .react-dialog dd {
   margin: 0;
   font-weight: 700;
+}
+.detail-notes {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: #66807a;
+  background: #e3f0ec;
+}
+.detail-notes p {
+  margin: 0 0 8px;
+}
+.detail-notes p:last-child {
+  margin-bottom: 0;
 }
 .sr-only {
   position: absolute;

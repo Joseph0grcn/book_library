@@ -127,12 +127,17 @@ function App() {
 
 function LibraryPage({ books, onSelect, onNavigate, onUpdate, onDelete }) {
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
   const visibleBooks = useMemo(
     () =>
-      books.filter((book) =>
-        `${book.title} ${book.author}`.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [books, query],
+      books.filter((book) => {
+        const matchesText = `${book.title} ${book.author}`
+          .toLowerCase()
+          .includes(query.toLowerCase());
+        const current = book.status || (book.read ? 'read' : 'unread');
+        return matchesText && (status === 'all' || current === status);
+      }),
+    [books, query, status],
   );
   return (
     <section className="react-page">
@@ -153,6 +158,15 @@ function LibraryPage({ books, onSelect, onNavigate, onUpdate, onDelete }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Başlık veya yazar ara"
         />
+      </label>
+      <label className="react-filter">
+        <span>Durum</span>
+        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="all">Tümü</option>
+          <option value="unread">Okunacak</option>
+          <option value="reading">Okunuyor</option>
+          <option value="read">Okundu</option>
+        </select>
       </label>
       {visibleBooks.length ? (
         <div className="book-grid">
@@ -223,7 +237,18 @@ function LibraryPage({ books, onSelect, onNavigate, onUpdate, onDelete }) {
 }
 
 function AddPage({ onSave }) {
-  const [form, setForm] = useState({ title: '', author: '', isbn: '' });
+  const [form, setForm] = useState({
+    title: '',
+    author: '',
+    isbn: '',
+    status: 'unread',
+    progress: 0,
+    rating: 0,
+    shelf: 'owned',
+    tags: '',
+    review: '',
+    notes: '',
+  });
   const submit = (event) => {
     event.preventDefault();
     if (!form.title.trim()) return;
@@ -232,11 +257,17 @@ function AddPage({ onSave }) {
       title: form.title.trim(),
       author: form.author.trim(),
       isbn: form.isbn.trim(),
-      status: 'unread',
-      read: false,
-      progress: 0,
-      rating: 0,
-      tags: [],
+      status: form.status,
+      read: form.status === 'read',
+      progress: form.status === 'read' ? 100 : Number(form.progress) || 0,
+      rating: Number(form.rating) || 0,
+      shelf: form.shelf,
+      tags: form.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      review: form.review.trim(),
+      notes: form.notes.trim(),
       metadata: {},
       createdAt: Date.now(),
     });
@@ -267,6 +298,70 @@ function AddPage({ onSave }) {
             inputMode="numeric"
             value={form.isbn}
             onChange={(event) => setForm({ ...form, isbn: event.target.value })}
+          />
+        </label>
+        <label>
+          Okuma durumu
+          <select
+            value={form.status}
+            onChange={(event) => setForm({ ...form, status: event.target.value })}
+          >
+            <option value="unread">Okunacak</option>
+            <option value="reading">Okunuyor</option>
+            <option value="read">Okundu</option>
+          </select>
+        </label>
+        <label>
+          İlerleme (%)
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={form.progress}
+            onChange={(event) => setForm({ ...form, progress: event.target.value })}
+          />
+        </label>
+        <label>
+          Puan (0-5)
+          <input
+            type="number"
+            min="0"
+            max="5"
+            value={form.rating}
+            onChange={(event) => setForm({ ...form, rating: event.target.value })}
+          />
+        </label>
+        <label>
+          Raf
+          <select
+            value={form.shelf}
+            onChange={(event) => setForm({ ...form, shelf: event.target.value })}
+          >
+            <option value="owned">Sahip olduklarım</option>
+            <option value="wishlist">Okuma listem</option>
+            <option value="favorites">Favorilerim</option>
+          </select>
+        </label>
+        <label>
+          Etiketler
+          <input
+            value={form.tags}
+            onChange={(event) => setForm({ ...form, tags: event.target.value })}
+            placeholder="kurgu, klasik"
+          />
+        </label>
+        <label>
+          Yorum
+          <textarea
+            value={form.review}
+            onChange={(event) => setForm({ ...form, review: event.target.value })}
+          />
+        </label>
+        <label>
+          Notlar
+          <textarea
+            value={form.notes}
+            onChange={(event) => setForm({ ...form, notes: event.target.value })}
           />
         </label>
         <button type="submit">Kitabı kaydet</button>
@@ -477,6 +572,25 @@ function BookDetail({ book, onClose, onUpdate }) {
             <p className="eyebrow">KİTAP AYRINTISI</p>
             <h2>{book.title}</h2>
             <p className="detail-author">{book.author || 'Yazar bilinmiyor'}</p>
+            {(book.tags?.length || book.review || book.notes) && (
+              <div className="detail-notes">
+                {book.tags?.length > 0 && (
+                  <p>
+                    <strong>Etiketler:</strong> {book.tags.join(', ')}
+                  </p>
+                )}
+                {book.review && (
+                  <p>
+                    <strong>Yorum:</strong> {book.review}
+                  </p>
+                )}
+                {book.notes && (
+                  <p>
+                    <strong>Not:</strong> {book.notes}
+                  </p>
+                )}
+              </div>
+            )}
             <dl>
               <dt>Durum</dt>
               <dd>
