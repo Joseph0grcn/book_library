@@ -42,6 +42,26 @@ const navigation = [
   { id: 'friends', label: 'Arkadaşlar' },
 ];
 
+function loadQuagga() {
+  if (window.Quagga) return Promise.resolve(window.Quagga);
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-quagga-fallback]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.Quagga), { once: true });
+      existing.addEventListener('error', reject, { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js';
+    script.async = true;
+    script.dataset.quaggaFallback = 'true';
+    script.onload = () =>
+      window.Quagga ? resolve(window.Quagga) : reject(new Error('Quagga yüklenemedi.'));
+    script.onerror = () => reject(new Error('Barkod tarayıcısı yüklenemedi.'));
+    document.head.appendChild(script);
+  });
+}
+
 function pageFromLocation() {
   const path = window.location.pathname.replace(/^\/+/, '').split('/')[0];
   return navigation.some((item) => item.id === path)
@@ -486,7 +506,9 @@ function AddPage({ onSave, userId, onNotice }) {
   const [quickMode, setQuickMode] = useState(false);
   const [quickQueue, setQuickQueue] = useState([]);
   const videoRef = useRef(null);
+  const scannerRef = useRef(null);
   const streamRef = useRef(null);
+  const quaggaActiveRef = useRef(false);
   const queueRef = useRef([]);
   const lastScanRef = useRef('');
   const scanCandidateRef = useRef('');
@@ -517,15 +539,98 @@ function AddPage({ onSave, userId, onNotice }) {
     }
   };
   const stopCamera = () => {
+    if (quaggaActiveRef.current && window.Quagga) {
+      window.Quagga.offDetected?.();
+      window.Quagga.stop();
+      quaggaActiveRef.current = false;
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraOpen(false);
   };
+  const acceptScannedIsbn = async (rawValue, isQuick) => {
+    let isbn;
+    try {
+      isbn = validateIsbn(rawValue || '');
+    } catch {
+      scanCandidateRef.current = '';
+      scanStableCountRef.current = 0;
+      return;
+    }
+    if (scanCandidateRef.current === isbn) scanStableCountRef.current += 1;
+    else {
+      scanCandidateRef.current = isbn;
+      scanStableCountRef.current = 1;
+    }
+    if (scanStableCountRef.current < 3 || isbn === lastScanRef.current) return;
+
+    lastScanRef.current = isbn;
+    if (isQuick) {
+      if (!queueRef.current.includes(isbn)) {
+        queueRef.current = [...queueRef.current, isbn];
+        setQuickQueue(queueRef.current);
+        onNotice?.(`${isbn} kuyruğa eklendi. Sıradaki kitabı gösterin.`);
+      }
+      window.setTimeout(() => {
+        lastScanRef.current = '';
+        scanCandidateRef.current = '';
+        scanStableCountRef.current = 0;
+      }, 1200);
+      return;
+    }
+
+    stopCamera();
+    setForm((current) => ({ ...current, isbn }));
+    try {
+      const book = await lookupIsbn(isbn);
+      setForm((current) => ({ ...current, ...book }));
+      setIsbnError('');
+    } catch (error) {
+      setIsbnError(error.message);
+    }
+  };
   const startCamera = async (isQuick = quickMode) => {
-    if (!window.BarcodeDetector || !navigator.mediaDevices?.getUserMedia) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       onNotice?.(
-        'Bu tarayıcıda kamera barkod taraması desteklenmiyor. ISBN alanına yazabilirsiniz.',
+        'Kamera için siteyi HTTPS üzerinden açın ve tarayıcı kamera iznini etkinleştirin.',
       );
+      return;
+    }
+    if (!window.BarcodeDetector) {
+      try {
+        const quagga = await loadQuagga();
+        setCameraOpen(true);
+        requestAnimationFrame(() => {
+          if (!scannerRef.current) return;
+          quagga.init(
+            {
+              inputStream: {
+                name: 'React scanner',
+                type: 'LiveStream',
+                target: scannerRef.current,
+                constraints: { facingMode: 'environment' },
+              },
+              decoder: { readers: ['ean_reader', 'ean_8_reader'] },
+              locate: true,
+            },
+            (error) => {
+              if (error) {
+                stopCamera();
+                onNotice?.(`Kamera başlatılamadı: ${error.message || error}`);
+                return;
+              }
+              quaggaActiveRef.current = true;
+              quagga.onDetected((result) => {
+                const value = result?.codeResult?.code;
+                if (value) acceptScannedIsbn(value, isQuick);
+              });
+              quagga.start();
+            },
+          );
+        });
+      } catch (error) {
+        onNotice?.(`${error.message} ISBN alanına elle yazabilirsiniz.`);
+      }
       return;
     }
     try {
@@ -545,48 +650,13 @@ function AddPage({ onSave, userId, onNotice }) {
         if (!streamRef.current || !videoRef.current) return;
         try {
           const codes = await detector.detect(videoRef.current);
-          const detected = codes.find((code) => {
-            try {
-              validateIsbn(code.rawValue || '');
-              return true;
-            } catch {
-              return false;
-            }
-          })?.rawValue;
-          const isbn = detected ? validateIsbn(detected) : '';
-          if (isbn) {
-            if (scanCandidateRef.current === isbn) scanStableCountRef.current += 1;
-            else {
-              scanCandidateRef.current = isbn;
-              scanStableCountRef.current = 1;
-            }
-          } else {
-            scanCandidateRef.current = '';
-            scanStableCountRef.current = 0;
+          const detected = codes.find((code) => code.rawValue)?.rawValue;
+          if (detected) {
+            await acceptScannedIsbn(detected, isQuick);
+            if (!isQuick) return;
           }
-          if (isbn && scanStableCountRef.current >= 3 && isbn !== lastScanRef.current) {
-            lastScanRef.current = isbn;
-            if (isQuick) {
-              if (!queueRef.current.includes(isbn)) {
-                queueRef.current = [...queueRef.current, isbn];
-                setQuickQueue(queueRef.current);
-                onNotice?.(`${isbn} kuyruğa eklendi. Sıradaki kitabı gösterin.`);
-              }
-              window.setTimeout(() => {
-                lastScanRef.current = '';
-              }, 1200);
-              requestAnimationFrame(scan);
-              return;
-            }
-            stopCamera();
-            setForm((current) => ({ ...current, isbn }));
-            try {
-              const book = await lookupIsbn(isbn);
-              setForm((current) => ({ ...current, ...book }));
-              setIsbnError('');
-            } catch (error) {
-              setIsbnError(error.message);
-            }
+          if (streamRef.current) {
+            requestAnimationFrame(scan);
             return;
           }
         } catch {
@@ -743,7 +813,7 @@ function AddPage({ onSave, userId, onNotice }) {
           </div>
         )}
         {cameraOpen && (
-          <div className="scanner-preview">
+          <div className="scanner-preview" ref={scannerRef}>
             <video ref={videoRef} muted playsInline aria-label="Barkod kamera görüntüsü" />
             <p>Kamerayı barkoda doğrultun.</p>
           </div>

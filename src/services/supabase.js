@@ -404,11 +404,11 @@ export async function shareBook(userId, book, caption) {
 }
 
 export async function lookupIsbn(isbn) {
-  const clean = normalizeIsbn(String(isbn || ''));
+  const clean = normalizeIsbn(String(isbn ?? '').trim());
   const book = await fetchBookMetadata(clean);
-  return { ...book, isbn: normalizeIsbn(book.isbn || clean) };
+  return { ...book, isbn: normalizeIsbn(String(book.isbn ?? clean).trim()) };
 }
 
 export function validateIsbn(isbn) {
-  return normalizeIsbn(String(isbn || ''));
+  return normalizeIsbn(String(isbn ?? '').trim());
 }
