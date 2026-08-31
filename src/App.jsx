@@ -33,13 +33,13 @@ const QUOTES_KEY = 'book_library_quotes';
 const PROFILE_KEY = 'book_library_profile';
 const THEME_KEY = 'book_library_theme';
 const navigation = [
-  { id: 'feed', label: 'Akış' },
-  { id: 'library', label: 'Kitaplığım' },
-  { id: 'add', label: 'Kitap ekle' },
-  { id: 'stats', label: 'İstatistikler' },
-  { id: 'quotes', label: 'Alıntılar' },
-  { id: 'profile', label: 'Profilim' },
-  { id: 'friends', label: 'Arkadaşlar' },
+  { id: 'feed', label: 'Akış', icon: '◉' },
+  { id: 'library', label: 'Kitaplığım', icon: '▦' },
+  { id: 'add', label: 'Kitap ekle', icon: '+' },
+  { id: 'stats', label: 'İstatistikler', icon: '◔' },
+  { id: 'quotes', label: 'Alıntılar', icon: '“' },
+  { id: 'profile', label: 'Profilim', icon: '◎' },
+  { id: 'friends', label: 'Arkadaşlar', icon: '♧' },
 ];
 
 function loadQuagga() {
@@ -220,7 +220,10 @@ function App() {
             type="button"
             onClick={() => navigate(item.id)}
           >
-            {item.label}
+            <span className="nav-icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            <span className="nav-label">{item.label}</span>
           </button>
         ))}
       </nav>

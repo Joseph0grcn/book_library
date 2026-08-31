@@ -193,6 +193,12 @@ p {
   background: #fff;
 }
 .react-nav button {
+  display: grid;
+  min-width: 88px;
+  min-height: 56px;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
   flex: 0 0 auto;
   padding: 10px 14px;
   border: 0;
@@ -200,6 +206,20 @@ p {
   color: #66807a;
   background: transparent;
   cursor: pointer;
+}
+.nav-icon {
+  display: block;
+  color: currentColor;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.nav-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 .react-nav button.active,
 .react-nav button:hover {
@@ -893,8 +913,9 @@ p {
     box-shadow: 0 -8px 24px rgba(25, 51, 47, 0.12);
   }
   .react-nav button {
-    min-width: 92px;
-    min-height: 44px;
+    min-width: 76px;
+    min-height: 54px;
+    padding: 8px 10px;
   }
   :root[data-theme='dark'] .react-nav {
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.26);
