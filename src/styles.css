@@ -90,6 +90,21 @@ body {
 }
 button {
   font: inherit;
+  border: 0;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+button:focus-visible {
+  outline: 3px solid rgba(38, 139, 210, 0.38);
+  outline-offset: 2px;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .react-shell {
@@ -138,6 +153,17 @@ p {
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
+}
+.header-actions button {
+  border: 1px solid #b9d6ce;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #19332f;
+  background: #fff;
+}
+.header-actions button:hover {
+  border-color: #176b5b;
+  background: #e3f0ec;
 }
 .react-nav {
   display: flex;
@@ -359,6 +385,11 @@ p {
 .book-tile-actions button {
   padding: 8px 10px !important;
   font-size: 0.78rem;
+}
+.book-tile-actions button:hover,
+.feed-actions button:hover,
+.quick-queue button:hover {
+  transform: translateY(-1px);
 }
 .danger-action {
   color: #fff !important;
