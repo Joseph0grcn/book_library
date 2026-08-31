@@ -249,7 +249,7 @@ p {
 }
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
 }
 .book-tile {
@@ -268,7 +268,7 @@ p {
 }
 .book-tile-main {
   display: grid;
-  grid-template-rows: 130px auto auto auto;
+  grid-template-rows: 180px 2.6em 1.25em 1.25em;
   gap: 6px;
   min-width: 0;
   padding: 0;
@@ -344,11 +344,17 @@ p {
   min-height: 120px;
   resize: vertical;
 }
+.react-search input,
+.react-filter select,
+.react-form input,
+.react-form select {
+  min-height: 42px;
+}
 .book-tile {
   display: grid;
   align-content: start;
   gap: 6px;
-  min-height: 230px;
+  min-height: 0;
   text-align: left;
   color: #19332f !important;
   background: #f8fbfa !important;
@@ -357,8 +363,8 @@ p {
 .book-tile img,
 .book-tile-placeholder {
   width: 100%;
-  height: 130px;
-  object-fit: cover;
+  height: 180px;
+  object-fit: contain;
   border-radius: 6px;
   background: #e3f0ec;
 }
@@ -381,6 +387,7 @@ p {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 2px;
+  min-height: 38px;
 }
 .book-tile-actions button {
   padding: 8px 10px !important;
@@ -839,6 +846,20 @@ p {
   }
   .react-stat-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .book-tile {
+    padding: 10px;
+  }
+  .book-tile-main {
+    grid-template-rows: 150px 2.6em 1.25em 1.25em;
+  }
+  .book-tile img,
+  .book-tile-placeholder {
+    height: 150px;
   }
   .status-badge {
     white-space: normal;
