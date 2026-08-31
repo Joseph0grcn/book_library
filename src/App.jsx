@@ -25,6 +25,7 @@ import {
   subscribeToRealtime,
   markNotificationsRead,
   toggleLike,
+  validateIsbn,
 } from './services/supabase.js';
 
 const STORAGE_KEY = 'book_library_books';
@@ -488,14 +489,29 @@ function AddPage({ onSave, userId, onNotice }) {
   const streamRef = useRef(null);
   const queueRef = useRef([]);
   const lastScanRef = useRef('');
+  const scanCandidateRef = useRef('');
+  const scanStableCountRef = useRef(0);
+  const [isbnError, setIsbnError] = useState('');
   const lookup = async () => {
-    if (!form.isbn.trim()) return;
+    if (!form.isbn.trim()) {
+      setIsbnError('ISBN girin veya barkodu tarayın.');
+      return;
+    }
+    let isbn;
+    try {
+      isbn = validateIsbn(form.isbn);
+      setForm((current) => ({ ...current, isbn }));
+      setIsbnError('');
+    } catch (error) {
+      setIsbnError(error.message);
+      return;
+    }
     setLookingUp(true);
     try {
-      const book = await lookupIsbn(form.isbn);
+      const book = await lookupIsbn(isbn);
       setForm((current) => ({ ...current, ...book }));
     } catch (error) {
-      alert(error.message);
+      setIsbnError(error.message);
     } finally {
       setLookingUp(false);
     }
@@ -529,8 +545,26 @@ function AddPage({ onSave, userId, onNotice }) {
         if (!streamRef.current || !videoRef.current) return;
         try {
           const codes = await detector.detect(videoRef.current);
-          const isbn = codes.find((code) => /^97[89]\d{10}$/.test(code.rawValue || ''))?.rawValue;
-          if (isbn && isbn !== lastScanRef.current) {
+          const detected = codes.find((code) => {
+            try {
+              validateIsbn(code.rawValue || '');
+              return true;
+            } catch {
+              return false;
+            }
+          })?.rawValue;
+          const isbn = detected ? validateIsbn(detected) : '';
+          if (isbn) {
+            if (scanCandidateRef.current === isbn) scanStableCountRef.current += 1;
+            else {
+              scanCandidateRef.current = isbn;
+              scanStableCountRef.current = 1;
+            }
+          } else {
+            scanCandidateRef.current = '';
+            scanStableCountRef.current = 0;
+          }
+          if (isbn && scanStableCountRef.current >= 3 && isbn !== lastScanRef.current) {
             lastScanRef.current = isbn;
             if (isQuick) {
               if (!queueRef.current.includes(isbn)) {
@@ -546,8 +580,13 @@ function AddPage({ onSave, userId, onNotice }) {
             }
             stopCamera();
             setForm((current) => ({ ...current, isbn }));
-            const book = await lookupIsbn(isbn);
-            setForm((current) => ({ ...current, ...book }));
+            try {
+              const book = await lookupIsbn(isbn);
+              setForm((current) => ({ ...current, ...book }));
+              setIsbnError('');
+            } catch (error) {
+              setIsbnError(error.message);
+            }
             return;
           }
         } catch {
@@ -589,11 +628,21 @@ function AddPage({ onSave, userId, onNotice }) {
   const submit = (event) => {
     event.preventDefault();
     if (!form.title.trim()) return;
+    let isbn = '';
+    if (form.isbn.trim()) {
+      try {
+        isbn = validateIsbn(form.isbn);
+        setIsbnError('');
+      } catch (error) {
+        setIsbnError(error.message);
+        return;
+      }
+    }
     onSave({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: form.title.trim(),
       author: form.author.trim(),
-      isbn: form.isbn.trim(),
+      isbn,
       status: form.status,
       read: form.status === 'read',
       progress: form.status === 'read' ? 100 : Number(form.progress) || 0,
@@ -637,7 +686,19 @@ function AddPage({ onSave, userId, onNotice }) {
             <input
               inputMode="numeric"
               value={form.isbn}
-              onChange={(event) => setForm({ ...form, isbn: event.target.value })}
+              onChange={(event) => {
+                setForm({ ...form, isbn: event.target.value });
+                setIsbnError('');
+              }}
+              onBlur={() => {
+                if (!form.isbn.trim()) return;
+                try {
+                  setForm((current) => ({ ...current, isbn: validateIsbn(current.isbn) }));
+                  setIsbnError('');
+                } catch (error) {
+                  setIsbnError(error.message);
+                }
+              }}
             />
             <button
               type="button"
@@ -655,6 +716,11 @@ function AddPage({ onSave, userId, onNotice }) {
               {cameraOpen ? 'Kamerayı kapat' : 'Barkod tara'}
             </button>
           </div>
+          {isbnError && (
+            <span className="field-error" role="alert">
+              {isbnError}
+            </span>
+          )}
         </label>
         <div className="quick-scan-controls">
           <button type="button" className="secondary-action" onClick={toggleQuickMode}>

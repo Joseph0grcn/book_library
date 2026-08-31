@@ -1,3 +1,5 @@
+import { fetchBookMetadata, normalizeIsbn } from '../../js/features/isbn.js';
+
 const STORAGE_KEY = 'book_library_books';
 
 function client() {
@@ -402,24 +404,11 @@ export async function shareBook(userId, book, caption) {
 }
 
 export async function lookupIsbn(isbn) {
-  const clean = String(isbn || '').replace(/[^0-9Xx]/g, '');
-  if (!clean) throw new Error('Geçerli bir ISBN girin.');
-  const response = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(clean)}`,
-  );
-  if (!response.ok) throw new Error('Kitap bilgisi alınamadı.');
-  const data = await response.json();
-  const info = data.items?.[0]?.volumeInfo;
-  if (!info) throw new Error('Bu ISBN için kitap bulunamadı.');
-  return {
-    title: info.title || '',
-    author: (info.authors || []).join(', '),
-    year: info.publishedDate?.slice(0, 4) || '',
-    isbn: clean,
-    metadata: {
-      imageLinks: info.imageLinks || {},
-      description: info.description || '',
-      pageCount: info.pageCount || 0,
-    },
-  };
+  const clean = normalizeIsbn(String(isbn || ''));
+  const book = await fetchBookMetadata(clean);
+  return { ...book, isbn: normalizeIsbn(book.isbn || clean) };
+}
+
+export function validateIsbn(isbn) {
+  return normalizeIsbn(String(isbn || ''));
 }

@@ -815,6 +815,13 @@ p {
   color: #176b5b;
   background: #e3f0ec;
 }
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
 .share-option {
   display: flex !important;
   grid-template-columns: auto 1fr;
