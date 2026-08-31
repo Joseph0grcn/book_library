@@ -30,6 +30,7 @@ import {
 const STORAGE_KEY = 'book_library_books';
 const QUOTES_KEY = 'book_library_quotes';
 const PROFILE_KEY = 'book_library_profile';
+const THEME_KEY = 'book_library_theme';
 const navigation = [
   { id: 'feed', label: 'Akış' },
   { id: 'library', label: 'Kitaplığım' },
@@ -68,6 +69,11 @@ function App() {
   const [session, setSession] = useState(undefined);
   const [profile, setProfile] = useState({});
   const [notice, setNotice] = useState('');
+  const [theme, setTheme] = useState(
+    () =>
+      localStorage.getItem(THEME_KEY) ||
+      (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  );
   const [notifications, setNotifications] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   useEffect(() => {
@@ -90,6 +96,13 @@ function App() {
       })
       .catch((error) => setNotice(error.message));
   }, [session]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#002b36' : '#176b5b');
+  }, [theme]);
   useEffect(() => {
     if (!session?.user?.id) return undefined;
     const refresh = () => {
@@ -148,6 +161,13 @@ function App() {
         </div>
         <div className="header-actions">
           <span className="status-badge">{session ? 'Çevrimiçi' : 'Yerel mod'}</span>
+          <button
+            type="button"
+            className="secondary-action theme-toggle"
+            onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+          >
+            {theme === 'dark' ? 'Açık mod' : 'Koyu mod'}
+          </button>
           {session && (
             <>
               <button

@@ -27,3 +27,12 @@ test('mobil React gezinmesi yatay olarak kullanılabilir', async ({ page }) => {
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByRole('heading', { name: 'Profilim' })).toBeVisible();
 });
+
+test('koyu ve açık tema tercihi korunur', async ({ page }) => {
+  const toggle = page.getByRole('button', { name: 'Koyu mod' });
+  await toggle.click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('button', { name: 'Açık mod' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});

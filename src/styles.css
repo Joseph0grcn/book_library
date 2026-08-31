@@ -4,6 +4,82 @@
   background: #edf4f1;
   font-synthesis: none;
 }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  background: #002b36;
+  color: #d8e8e5;
+}
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] .react-loading,
+:root[data-theme='dark'] .auth-page {
+  background: #002b36;
+  color: #d8e8e5;
+}
+:root[data-theme='dark'] .react-page,
+:root[data-theme='dark'] .react-hero,
+:root[data-theme='dark'] .book-preview-section,
+:root[data-theme='dark'] .migration-note,
+:root[data-theme='dark'] .notification-center,
+:root[data-theme='dark'] .react-dialog {
+  border-color: #195461;
+  background: #073b47;
+  color: #d8e8e5;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+:root[data-theme='dark'] .react-nav {
+  border-color: #195461;
+  background: #073b47;
+}
+:root[data-theme='dark'] .react-nav button {
+  color: #9cb8b5;
+}
+:root[data-theme='dark'] .react-nav button.active,
+:root[data-theme='dark'] .react-nav button:hover {
+  color: #fff;
+  background: #268bd2;
+}
+:root[data-theme='dark'] .book-tile {
+  border-color: #195461 !important;
+  background: #0b4652 !important;
+  color: #d8e8e5 !important;
+}
+:root[data-theme='dark'] .book-tile-main {
+  color: #d8e8e5 !important;
+}
+:root[data-theme='dark'] .book-tile-placeholder,
+:root[data-theme='dark'] .react-stat-grid div,
+:root[data-theme='dark'] .react-stats div,
+:root[data-theme='dark'] .detail-notes,
+:root[data-theme='dark'] .detail-history,
+:root[data-theme='dark'] .feed-comments p {
+  background: #0b4652;
+  color: #d8e8e5;
+}
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  border-color: #286576;
+  color: #d8e8e5;
+  background: #062f39;
+}
+:root[data-theme='dark'] .intro,
+:root[data-theme='dark'] .migration-copy,
+:root[data-theme='dark'] .book-tile span,
+:root[data-theme='dark'] .section-heading span,
+:root[data-theme='dark'] .react-stat-grid span,
+:root[data-theme='dark'] .feed-card-head span {
+  color: #9cb8b5;
+}
+:root[data-theme='dark'] .status-badge,
+:root[data-theme='dark'] .secondary-action {
+  border-color: #286576;
+  color: #d8e8e5 !important;
+  background: #0b4652 !important;
+}
+:root[data-theme='dark'] .feed-card {
+  border-color: #195461;
+  background: #073b47;
+}
 
 * {
   box-sizing: border-box;
