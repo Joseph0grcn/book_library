@@ -84,6 +84,19 @@
 * {
   box-sizing: border-box;
 }
+/* Keep Netlify's optional deploy badge outside the viewport without affecting layout. */
+#netlify-badge,
+.netlify-badge,
+[data-netlify-badge] {
+  position: fixed !important;
+  left: -10000px !important;
+  bottom: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 /* Netlify can inject its optional deploy badge outside the app root. */
 #netlify-badge,
 .netlify-badge,
