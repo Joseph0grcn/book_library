@@ -1453,6 +1453,27 @@ function BookDetail({ book, onClose, onUpdate }) {
                   <dd>{book.progress}%</dd>
                 </>
               )}
+              {book.year && (
+                <>
+                  <dt>Yıl</dt>
+                  <dd>{book.year}</dd>
+                </>
+              )}
+              {book.rating > 0 && (
+                <>
+                  <dt>Puan</dt>
+                  <dd>
+                    {'★'.repeat(book.rating)}
+                    {'☆'.repeat(5 - book.rating)}
+                  </dd>
+                </>
+              )}
+              {book.shelf && (
+                <>
+                  <dt>Raf</dt>
+                  <dd>{book.shelf}</dd>
+                </>
+              )}
             </dl>
             <button type="button" onClick={() => setEditing(true)}>
               Düzenle

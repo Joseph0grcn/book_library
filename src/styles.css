@@ -164,6 +164,18 @@ p {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.book-tile-main {
+  display: grid;
+  grid-template-rows: 130px auto auto auto;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #19332f !important;
+  background: transparent !important;
+  text-align: left;
+}
 .migration-note {
   margin-top: 16px;
 }
@@ -255,6 +267,26 @@ p {
 }
 .book-tile small {
   color: #176b5b;
+}
+.book-tile-main strong,
+.book-tile-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.book-tile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.book-tile-actions button {
+  padding: 8px 10px !important;
+  font-size: 0.78rem;
+}
+.danger-action {
+  color: #fff !important;
+  background: #b54848 !important;
 }
 .react-empty {
   display: grid;
