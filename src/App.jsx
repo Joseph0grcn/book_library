@@ -224,6 +224,12 @@ function App() {
           </button>
         ))}
       </nav>
+      {notificationsOpen && (
+        <NotificationCenter
+          notifications={notifications}
+          onClose={() => setNotificationsOpen(false)}
+        />
+      )}
       <main>
         {page === 'feed' && <FeedPage userId={session?.user?.id} onNotice={setNotice} />}
         {page === 'library' && (
@@ -1455,11 +1461,14 @@ function InfoPage({ title, text }) {
   );
 }
 
-function NotificationCenter({ notifications }) {
+function NotificationCenter({ notifications, onClose }) {
   return (
     <aside className="notification-center" aria-label="Bildirimler">
       <div className="section-heading">
         <h2>Bildirimler</h2>
+        <button type="button" className="text-action" onClick={onClose}>
+          Kapat
+        </button>
         <span>{notifications.length} kayıt</span>
       </div>
       {notifications.length ? (
@@ -1488,6 +1497,18 @@ function BookDetail({ book, onClose, onUpdate }) {
     event.preventDefault();
     onUpdate({ ...book, ...form, progress: Number(form.progress) || 0, editing: undefined });
   };
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
   return (
     <div className="react-dialog-backdrop" role="presentation" onClick={onClose}>
       <section
@@ -1497,7 +1518,13 @@ function BookDetail({ book, onClose, onUpdate }) {
         aria-label="Kitap ayrıntısı"
         onClick={(event) => event.stopPropagation()}
       >
-        <button className="dialog-close" type="button" onClick={onClose} aria-label="Kapat">
+        <button
+          className="dialog-close"
+          type="button"
+          onClick={onClose}
+          aria-label="Kapat"
+          autoFocus
+        >
           ×
         </button>
         {editing ? (

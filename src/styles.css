@@ -323,6 +323,7 @@ p {
   border: 0;
   border-radius: 8px;
   padding: 10px 14px;
+  min-height: 42px;
   color: #fff;
   background: #176b5b;
   cursor: pointer;
@@ -778,6 +779,12 @@ p {
   background: #176b5b;
   cursor: pointer;
 }
+.notification-center .text-action {
+  min-height: 0;
+  padding: 4px 8px;
+  color: #176b5b;
+  background: transparent;
+}
 .scanner-preview {
   overflow: hidden;
   border: 1px solid #b9d6ce;
@@ -932,5 +939,8 @@ p {
   .backup-actions > * {
     width: 100%;
     justify-content: center;
+  }
+  .react-notice {
+    bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
